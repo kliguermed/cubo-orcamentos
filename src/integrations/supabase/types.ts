@@ -14,7 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      budgets: {
+        Row: {
+          client_cpf_cnpj: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          id: string
+          protocol_number: number
+          status: string
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_cpf_cnpj?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          protocol_number?: number
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_cpf_cnpj?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          protocol_number?: number
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      environments: {
+        Row: {
+          budget_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          subtotal: number | null
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          subtotal?: number | null
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          subtotal?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "environments_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          created_at: string
+          environment_id: string
+          id: string
+          name: string
+          purchase_price: number
+          quantity: number
+          sale_price: number
+          subtotal: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          environment_id: string
+          id?: string
+          name: string
+          purchase_price?: number
+          quantity?: number
+          sale_price?: number
+          subtotal?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          environment_id?: string
+          id?: string
+          name?: string
+          purchase_price?: number
+          quantity?: number
+          sale_price?: number
+          subtotal?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_environment_id_fkey"
+            columns: ["environment_id"]
+            isOneToOne: false
+            referencedRelation: "environments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          created_at: string
+          id: string
+          labor_type: string
+          labor_value: number
+          markup_percentage: number
+          payment_terms: string | null
+          rt_distribution: string
+          rt_type: string
+          rt_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          labor_type: string
+          labor_value?: number
+          markup_percentage?: number
+          payment_terms?: string | null
+          rt_distribution?: string
+          rt_type: string
+          rt_value?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          labor_type?: string
+          labor_value?: number
+          markup_percentage?: number
+          payment_terms?: string | null
+          rt_distribution?: string
+          rt_type?: string
+          rt_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
