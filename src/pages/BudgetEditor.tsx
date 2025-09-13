@@ -32,6 +32,7 @@ interface Environment {
 
 interface Item {
   id: string;
+  environment_id: string;
   name: string;
   quantity: number;
   purchase_price: number;
@@ -65,10 +66,12 @@ const BudgetEditor = () => {
 
   const fetchBudgetData = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const [budgetRes, envRes, settingsRes] = await Promise.all([
         supabase.from("budgets").select("*").eq("id", id).single(),
         supabase.from("environments").select("*").eq("budget_id", id),
-        supabase.from("settings").select("*").single()
+        supabase.from("settings").select("*").eq("user_id", user?.id).maybeSingle()
       ]);
 
       if (budgetRes.error) throw budgetRes.error;
@@ -76,7 +79,14 @@ const BudgetEditor = () => {
 
       setBudget(budgetRes.data as Budget);
       setEnvironments(envRes.data || []);
-      setSettings(settingsRes.data);
+      setSettings(settingsRes.data || {
+        labor_type: "percentage",
+        labor_value: 0,
+        rt_type: "percentage",
+        rt_value: 0,
+        markup_percentage: 0,
+        rt_distribution: "diluted"
+      });
       
       if (envRes.data && envRes.data.length > 0) {
         setSelectedEnvId(envRes.data[0].id);
@@ -177,7 +187,7 @@ const BudgetEditor = () => {
     }
   };
 
-  const calculateSalePrice = (purchasePrice: number) => {
+  const calculateSalePrice = (purchasePrice: number, quantity: number = 1) => {
     if (!settings) return purchasePrice;
     
     let salePrice = purchasePrice;
@@ -187,14 +197,20 @@ const BudgetEditor = () => {
       salePrice = salePrice * (1 + settings.markup_percentage / 100);
     }
     
-    // Apply labor (if percentage)
+    // Apply labor
     if (settings.labor_type === "percentage" && settings.labor_value > 0) {
       salePrice = salePrice * (1 + settings.labor_value / 100);
+    } else if (settings.labor_type === "fixed" && settings.labor_value > 0) {
+      // Add fixed labor value divided by quantity
+      salePrice = salePrice + (settings.labor_value / quantity);
     }
     
     // Apply RT (if percentage and diluted)
     if (settings.rt_type === "percentage" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
       salePrice = salePrice * (1 + settings.rt_value / 100);
+    } else if (settings.rt_type === "fixed" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
+      // Add fixed RT value divided by quantity
+      salePrice = salePrice + (settings.rt_value / quantity);
     }
     
     return salePrice;
@@ -202,12 +218,22 @@ const BudgetEditor = () => {
 
   const updateItem = async (itemId: string, field: string, value: any) => {
     try {
+      const currentItem = items.find(item => item.id === itemId);
+      if (!currentItem) return;
+      
       let updateData: any = { [field]: value };
       
-      // Auto-calculate sale price when purchase price changes
-      if (field === "purchase_price") {
-        updateData.sale_price = calculateSalePrice(parseFloat(value) || 0);
+      // Auto-calculate sale price when purchase price or quantity changes
+      if (field === "purchase_price" || field === "quantity") {
+        const newQuantity = field === "quantity" ? (parseFloat(value) || 0) : currentItem.quantity;
+        const newPurchasePrice = field === "purchase_price" ? (parseFloat(value) || 0) : currentItem.purchase_price;
+        updateData.sale_price = calculateSalePrice(newPurchasePrice, newQuantity);
       }
+
+      // Calculate subtotal
+      const finalQuantity = updateData.quantity || currentItem.quantity;
+      const finalSalePrice = updateData.sale_price || currentItem.sale_price;
+      updateData.subtotal = finalQuantity * finalSalePrice;
 
       const { error } = await supabase
         .from("items")
@@ -219,13 +245,96 @@ const BudgetEditor = () => {
       setItems(prev => 
         prev.map(item => 
           item.id === itemId 
-            ? { ...item, ...updateData, subtotal: (updateData.quantity || item.quantity) * (updateData.sale_price || item.sale_price) }
+            ? { ...item, ...updateData }
             : item
         )
       );
+
+      // Update environment subtotal
+      await updateEnvironmentSubtotal();
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar item",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteItem = async (itemId: string) => {
+    try {
+      const { error } = await supabase
+        .from("items")
+        .delete()
+        .eq("id", itemId);
+
+      if (error) throw error;
+
+      setItems(prev => prev.filter(item => item.id !== itemId));
+      await updateEnvironmentSubtotal();
+      
+      toast({
+        title: "Item removido",
+        description: "Item foi removido com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover item",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateEnvironmentSubtotal = async () => {
+    if (!selectedEnvId) return;
+    
+    const currentItems = items.filter(item => item.environment_id === selectedEnvId);
+    const subtotal = currentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    
+    try {
+      const { error } = await supabase
+        .from("environments")
+        .update({ subtotal })
+        .eq("id", selectedEnvId);
+
+      if (error) throw error;
+
+      setEnvironments(prev => 
+        prev.map(env => 
+          env.id === selectedEnvId 
+            ? { ...env, subtotal }
+            : env
+        )
+      );
+    } catch (error: any) {
+      console.error("Erro ao atualizar subtotal do ambiente:", error);
+    }
+  };
+
+  const saveBudgetClient = async () => {
+    if (!budget) return;
+    
+    try {
+      const { error } = await supabase
+        .from("budgets")
+        .update({
+          client_name: budget.client_name,
+          client_cpf_cnpj: budget.client_cpf_cnpj,
+          client_phone: budget.client_phone,
+          client_email: budget.client_email,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Dados salvos",
+        description: "Dados do cliente atualizados com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
         description: error.message,
         variant: "destructive",
       });
@@ -324,9 +433,15 @@ const BudgetEditor = () => {
                     value={budget.client_email || ""}
                     onChange={(e) => setBudget(prev => prev ? { ...prev, client_email: e.target.value } : null)}
                   />
-                </div>
-              </CardContent>
-            </Card>
+                 </div>
+                 <div className="pt-4">
+                   <Button onClick={saveBudgetClient} className="w-full">
+                     <Save className="h-4 w-4 mr-2" />
+                     Salvar dados do cliente
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
 
             {/* Environments */}
             <Card>
@@ -441,17 +556,15 @@ const BudgetEditor = () => {
                             <TableCell className="text-right font-medium">
                               {formatCurrency(item.subtotal)}
                             </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  // Delete item logic would go here
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                             <TableCell>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => deleteItem(item.id)}
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
