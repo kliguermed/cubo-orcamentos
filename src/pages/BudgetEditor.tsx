@@ -531,14 +531,21 @@ const BudgetEditor = () => {
                 <CardTitle>Dados do Cliente</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="client-name">Nome completo</Label>
-                  <Input
-                    id="client-name"
-                    value={budget.client_name}
-                    onChange={(e) => setBudget(prev => prev ? { ...prev, client_name: e.target.value } : null)}
-                  />
-                </div>
+                 <div>
+                   <Label htmlFor="client-name">Nome completo</Label>
+                   <Input
+                     id="client-name"
+                     value={budget.client_name}
+                     onChange={(e) => setBudget(prev => prev ? { ...prev, client_name: e.target.value } : null)}
+                     onFocus={(e) => {
+                       if (e.target.value === "Nome do cliente") {
+                         setBudget(prev => prev ? { ...prev, client_name: "" } : null);
+                       }
+                       e.target.select();
+                     }}
+                     placeholder="Digite o nome do cliente"
+                   />
+                 </div>
                 <div>
                   <Label htmlFor="client-cpf">CPF/CNPJ</Label>
                   <Input
@@ -667,36 +674,39 @@ const BudgetEditor = () => {
                                 className="border-0 p-0 h-8 focus-visible:ring-1"
                               />
                             </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={item.quantity}
-                                onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
-                                className="border-0 p-0 h-8 text-center focus-visible:ring-1"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={item.purchase_price}
-                                onChange={(e) => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)}
-                                className="border-0 p-0 h-8 text-right focus-visible:ring-1"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={item.sale_price}
-                                onChange={(e) => updateItem(item.id, "sale_price", parseFloat(e.target.value) || 0)}
-                                className="border-0 p-0 h-8 text-right focus-visible:ring-1"
-                              />
-                            </TableCell>
+                             <TableCell>
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 min="0"
+                                 value={item.quantity}
+                                 onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
+                                 onFocus={(e) => e.target.select()}
+                                 className="border-0 p-0 h-8 text-center focus-visible:ring-1"
+                               />
+                             </TableCell>
+                             <TableCell>
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 min="0"
+                                 value={item.purchase_price}
+                                 onChange={(e) => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)}
+                                 onFocus={(e) => e.target.select()}
+                                 className="border-0 p-0 h-8 text-right focus-visible:ring-1"
+                               />
+                             </TableCell>
+                             <TableCell>
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 min="0"
+                                 value={item.sale_price}
+                                 onChange={(e) => updateItem(item.id, "sale_price", parseFloat(e.target.value) || 0)}
+                                 onFocus={(e) => e.target.select()}
+                                 className="border-0 p-0 h-8 text-right focus-visible:ring-1"
+                               />
+                             </TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(item.subtotal)}
                             </TableCell>

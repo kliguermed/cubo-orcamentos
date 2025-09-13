@@ -124,6 +124,7 @@ export const ItemModal = ({
                 min="0.01"
                 value={quantity}
                 onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
+                onFocus={(e) => e.target.select()}
               />
             </div>
             <div>
@@ -135,6 +136,7 @@ export const ItemModal = ({
                 min="0"
                 value={purchasePrice}
                 onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
               />
             </div>
           </div>
@@ -148,6 +150,7 @@ export const ItemModal = ({
               min="0"
               value={salePrice}
               onChange={(e) => setSalePrice(parseFloat(e.target.value) || 0)}
+              onFocus={(e) => e.target.select()}
             />
           </div>
           
