@@ -18,7 +18,7 @@ interface Item {
   quantity: number;
   purchase_price: number;
   sale_price: number;
-  subtotal: number;
+  subtotal?: number;
 }
 
 interface ItemModalProps {
@@ -63,7 +63,6 @@ export const ItemModal = ({
         quantity,
         purchase_price: purchasePrice,
         sale_price: calculateSalePrice(),
-        subtotal: calculateSubtotal(),
       });
       onOpenChange(false);
       resetForm();

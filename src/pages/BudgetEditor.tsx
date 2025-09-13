@@ -39,7 +39,7 @@ interface Item {
   quantity: number;
   purchase_price: number;
   sale_price: number;
-  subtotal: number;
+  subtotal?: number;
 }
 
 const BudgetEditor = () => {
@@ -170,7 +170,6 @@ const BudgetEditor = () => {
             name: "Novo Item",
             quantity: 1,
             purchase_price: 0,
-            sale_price: 0,
           }
         ])
         .select()
