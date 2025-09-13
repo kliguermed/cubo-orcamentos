@@ -166,6 +166,7 @@ const Settings = () => {
                   onChange={(e) =>
                     setSettings(prev => ({ ...prev, labor_value: parseFloat(e.target.value) || 0 }))
                   }
+                  onFocus={(e) => e.target.select()}
                 />
               </div>
             </CardContent>
@@ -209,6 +210,7 @@ const Settings = () => {
                   onChange={(e) =>
                     setSettings(prev => ({ ...prev, rt_value: parseFloat(e.target.value) || 0 }))
                   }
+                  onFocus={(e) => e.target.select()}
                 />
               </div>
 
@@ -253,6 +255,7 @@ const Settings = () => {
                 onChange={(e) =>
                   setSettings(prev => ({ ...prev, markup_percentage: parseFloat(e.target.value) || 0 }))
                 }
+                onFocus={(e) => e.target.select()}
               />
             </CardContent>
           </Card>

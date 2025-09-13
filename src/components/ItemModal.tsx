@@ -27,6 +27,7 @@ interface ItemModalProps {
   onOpenChange: (open: boolean) => void;
   onSave: (item: Omit<Item, 'id'>) => Promise<void>;
   environmentId: string;
+  settings?: any;
 }
 
 export const ItemModal = ({
@@ -35,15 +36,20 @@ export const ItemModal = ({
   onOpenChange,
   onSave,
   environmentId,
+  settings,
 }: ItemModalProps) => {
   const [name, setName] = useState(item?.name || "");
   const [quantity, setQuantity] = useState(item?.quantity || 1);
   const [purchasePrice, setPurchasePrice] = useState(item?.purchase_price || 0);
-  const [salePrice, setSalePrice] = useState(item?.sale_price || 0);
   const [saving, setSaving] = useState(false);
 
+  const calculateSalePrice = () => {
+    if (!settings?.markup_percentage) return purchasePrice;
+    return purchasePrice * (1 + settings.markup_percentage / 100);
+  };
+
   const calculateSubtotal = () => {
-    return quantity * salePrice;
+    return quantity * calculateSalePrice();
   };
 
   const handleSave = async () => {
@@ -56,7 +62,7 @@ export const ItemModal = ({
         name: name.trim(),
         quantity,
         purchase_price: purchasePrice,
-        sale_price: salePrice,
+        sale_price: calculateSalePrice(),
         subtotal: calculateSubtotal(),
       });
       onOpenChange(false);
@@ -70,7 +76,6 @@ export const ItemModal = ({
     setName("");
     setQuantity(1);
     setPurchasePrice(0);
-    setSalePrice(0);
   };
 
   // Reset form when dialog opens/closes
@@ -79,7 +84,6 @@ export const ItemModal = ({
       setName(item.name);
       setQuantity(item.quantity);
       setPurchasePrice(item.purchase_price);
-      setSalePrice(item.sale_price);
     } else if (newOpen) {
       resetForm();
     }
@@ -142,15 +146,15 @@ export const ItemModal = ({
           </div>
           
           <div>
-            <Label htmlFor="item-sale-price">Preço de venda *</Label>
+            <Label htmlFor="item-sale-price">Preço de venda (calculado automaticamente)</Label>
             <Input
               id="item-sale-price"
               type="number"
               step="0.01"
               min="0"
-              value={salePrice}
-              onChange={(e) => setSalePrice(parseFloat(e.target.value) || 0)}
-              onFocus={(e) => e.target.select()}
+              value={calculateSalePrice()}
+              disabled
+              className="bg-muted"
             />
           </div>
           

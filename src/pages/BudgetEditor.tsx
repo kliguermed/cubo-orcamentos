@@ -755,13 +755,14 @@ const BudgetEditor = () => {
         onDelete={deleteEnvironment}
       />
       
-      <ItemModal
-        item={editingItem}
-        open={itemModalOpen}
-        onOpenChange={setItemModalOpen}
-        onSave={saveItem}
-        environmentId={selectedEnvId || ""}
-      />
+          <ItemModal
+            item={editingItem}
+            open={itemModalOpen}
+            onOpenChange={setItemModalOpen}
+            onSave={saveItem}
+            environmentId={selectedEnvId || ""}
+            settings={settings}
+          />
     </div>
   );
 };
