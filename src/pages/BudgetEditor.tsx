@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Save, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { EnvironmentModal } from "@/components/EnvironmentModal";
+import { ItemModal } from "@/components/ItemModal";
 
 interface Budget {
   id: string;
@@ -51,6 +53,10 @@ const BudgetEditor = () => {
   const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [settings, setSettings] = useState<any>(null);
+  const [environmentModalOpen, setEnvironmentModalOpen] = useState(false);
+  const [editingEnvironment, setEditingEnvironment] = useState<Environment | null>(null);
+  const [itemModalOpen, setItemModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -341,6 +347,130 @@ const BudgetEditor = () => {
     }
   };
 
+  const saveEnvironment = async (environment: Environment) => {
+    try {
+      const { error } = await supabase
+        .from("environments")
+        .update({
+          name: environment.name,
+          description: environment.description,
+        })
+        .eq("id", environment.id);
+
+      if (error) throw error;
+
+      setEnvironments(prev => 
+        prev.map(env => 
+          env.id === environment.id 
+            ? { ...env, name: environment.name, description: environment.description }
+            : env
+        )
+      );
+
+      toast({
+        title: "Ambiente atualizado",
+        description: "Dados do ambiente salvos com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar ambiente",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteEnvironment = async (environmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("environments")
+        .delete()
+        .eq("id", environmentId);
+
+      if (error) throw error;
+
+      setEnvironments(prev => prev.filter(env => env.id !== environmentId));
+      
+      if (selectedEnvId === environmentId) {
+        setSelectedEnvId(null);
+        setItems([]);
+      }
+
+      toast({
+        title: "Ambiente removido",
+        description: "Ambiente foi removido com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover ambiente",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveItem = async (itemData: Omit<Item, 'id'>) => {
+    try {
+      if (editingItem) {
+        // Update existing item
+        const { error } = await supabase
+          .from("items")
+          .update(itemData)
+          .eq("id", editingItem.id);
+
+        if (error) throw error;
+
+        setItems(prev => 
+          prev.map(item => 
+            item.id === editingItem.id 
+              ? { ...item, ...itemData }
+              : item
+          )
+        );
+
+        toast({
+          title: "Item atualizado",
+          description: "Item foi atualizado com sucesso",
+        });
+      } else {
+        // Create new item
+        const { data, error } = await supabase
+          .from("items")
+          .insert([itemData])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setItems(prev => [...prev, data]);
+
+        toast({
+          title: "Item adicionado",
+          description: "Novo item foi adicionado com sucesso",
+        });
+      }
+
+      await updateEnvironmentSubtotal();
+      setEditingItem(null);
+    } catch (error: any) {
+      toast({
+        title: editingItem ? "Erro ao atualizar item" : "Erro ao adicionar item",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEnvironmentModal = (environment: Environment) => {
+    setEditingEnvironment(environment);
+    setEnvironmentModalOpen(true);
+  };
+
+  const openItemModal = (item?: Item) => {
+    setEditingItem(item || null);
+    setItemModalOpen(true);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -450,22 +580,36 @@ const BudgetEditor = () => {
                 <CardDescription>Organize o orçamento por ambientes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 mb-4">
-                  {environments.map((env) => (
-                    <div
-                      key={env.id}
-                      className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                        selectedEnvId === env.id ? "bg-accent" : "hover:bg-accent/50"
-                      }`}
-                      onClick={() => setSelectedEnvId(env.id)}
-                    >
-                      <div className="font-medium">{env.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatCurrency(env.subtotal)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                 <div className="space-y-2 mb-4">
+                   {environments.map((env) => (
+                     <div
+                       key={env.id}
+                       className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                         selectedEnvId === env.id ? "bg-accent" : "hover:bg-accent/50"
+                       }`}
+                       onClick={() => setSelectedEnvId(env.id)}
+                     >
+                       <div className="flex justify-between items-center">
+                         <div>
+                           <div className="font-medium">{env.name}</div>
+                           <div className="text-sm text-muted-foreground">
+                             {formatCurrency(env.subtotal)}
+                           </div>
+                         </div>
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             openEnvironmentModal(env);
+                           }}
+                         >
+                           <Edit2 className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
                 <Button onClick={addEnvironment} variant="outline" className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Ambiente
@@ -486,21 +630,21 @@ const BudgetEditor = () => {
                         Total: {formatCurrency(itemsTotal)}
                       </CardDescription>
                     </div>
-                    <Button onClick={addItem}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Item
-                    </Button>
+                     <Button onClick={() => openItemModal()}>
+                       <Plus className="h-4 w-4 mr-2" />
+                       Adicionar Item
+                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {items.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-4">Nenhum item adicionado ainda</p>
-                      <Button onClick={addItem}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar primeiro item
-                      </Button>
-                    </div>
+                     <div className="text-center py-8">
+                       <p className="text-muted-foreground mb-4">Nenhum item adicionado ainda</p>
+                       <Button onClick={() => openItemModal()}>
+                         <Plus className="h-4 w-4 mr-2" />
+                         Adicionar primeiro item
+                       </Button>
+                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
@@ -591,6 +735,23 @@ const BudgetEditor = () => {
           </div>
         </div>
       </main>
+
+      {/* Modals */}
+      <EnvironmentModal
+        environment={editingEnvironment}
+        open={environmentModalOpen}
+        onOpenChange={setEnvironmentModalOpen}
+        onSave={saveEnvironment}
+        onDelete={deleteEnvironment}
+      />
+      
+      <ItemModal
+        item={editingItem}
+        open={itemModalOpen}
+        onOpenChange={setItemModalOpen}
+        onSave={saveItem}
+        environmentId={selectedEnvId || ""}
+      />
     </div>
   );
 };
