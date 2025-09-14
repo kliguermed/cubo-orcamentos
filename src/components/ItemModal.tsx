@@ -44,8 +44,23 @@ export const ItemModal = ({
   const [saving, setSaving] = useState(false);
 
   const calculateSalePrice = () => {
-    if (!settings?.markup_percentage) return purchasePrice;
-    return purchasePrice * (1 + settings.markup_percentage / 100);
+    if (!settings) return purchasePrice;
+    
+    let salePrice = purchasePrice;
+    
+    // Apply markup
+    if (settings.markup_percentage > 0) {
+      salePrice = salePrice * (1 + settings.markup_percentage / 100);
+    }
+    
+    // Apply RT (if percentage and diluted)
+    if (settings.rt_type === "percentage" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
+      salePrice = salePrice * (1 + settings.rt_value / 100);
+    } else if (settings.rt_type === "fixed" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
+      salePrice = salePrice + (settings.rt_value / quantity);
+    }
+    
+    return salePrice;
   };
 
   const calculateSubtotal = () => {

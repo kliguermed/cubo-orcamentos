@@ -202,14 +202,6 @@ const BudgetEditor = () => {
       salePrice = salePrice * (1 + settings.markup_percentage / 100);
     }
     
-    // Apply labor
-    if (settings.labor_type === "percentage" && settings.labor_value > 0) {
-      salePrice = salePrice * (1 + settings.labor_value / 100);
-    } else if (settings.labor_type === "fixed" && settings.labor_value > 0) {
-      // Add fixed labor value divided by quantity
-      salePrice = salePrice + (settings.labor_value / quantity);
-    }
-    
     // Apply RT (if percentage and diluted)
     if (settings.rt_type === "percentage" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
       salePrice = salePrice * (1 + settings.rt_value / 100);
@@ -219,6 +211,59 @@ const BudgetEditor = () => {
     }
     
     return salePrice;
+  };
+
+  // Calculate environment totals
+  const calculateEnvironmentTotals = () => {
+    if (!selectedEnvId || !settings) return {
+      itemsTotal: 0,
+      laborTotal: 0,
+      rtTotal: 0,
+      purchaseTotal: 0,
+      profitTotal: 0,
+      finalTotal: 0
+    };
+
+    const environmentItems = items.filter(item => item.environment_id === selectedEnvId);
+    
+    // Calculate totals
+    const itemsTotal = environmentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const purchaseTotal = environmentItems.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
+    
+    // Labor: fixed value per item
+    const laborTotal = settings.labor_value * environmentItems.length;
+    
+    // RT: calculate total RT applied to all items
+    let rtTotal = 0;
+    environmentItems.forEach(item => {
+      const purchaseValue = item.purchase_price * item.quantity;
+      let saleWithMarkup = purchaseValue;
+      
+      // Apply markup first
+      if (settings.markup_percentage > 0) {
+        saleWithMarkup = saleWithMarkup * (1 + settings.markup_percentage / 100);
+      }
+      
+      // Calculate RT portion
+      if (settings.rt_type === "percentage" && settings.rt_value > 0) {
+        rtTotal += saleWithMarkup * (settings.rt_value / 100);
+      } else if (settings.rt_type === "fixed" && settings.rt_value > 0) {
+        rtTotal += settings.rt_value;
+      }
+    });
+    
+    // Profit = (Items total + Labor) - Purchase total
+    const profitTotal = (itemsTotal + laborTotal) - purchaseTotal;
+    const finalTotal = itemsTotal + laborTotal;
+    
+    return {
+      itemsTotal,
+      laborTotal,
+      rtTotal,
+      purchaseTotal,
+      profitTotal,
+      finalTotal
+    };
   };
 
   const updateItem = async (itemId: string, field: string, value: any) => {
@@ -497,7 +542,7 @@ const BudgetEditor = () => {
   }
 
   const selectedEnvironment = environments.find(env => env.id === selectedEnvId);
-  const itemsTotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const environmentTotals = calculateEnvironmentTotals();
 
   return (
     <div className="min-h-screen bg-background">
@@ -631,10 +676,10 @@ const BudgetEditor = () => {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle>{selectedEnvironment.name}</CardTitle>
-                      <CardDescription>
-                        Total: {formatCurrency(itemsTotal)}
-                      </CardDescription>
+                       <CardTitle>{selectedEnvironment.name}</CardTitle>
+                       <CardDescription>
+                         Total do ambiente: {formatCurrency(environmentTotals.finalTotal)}
+                       </CardDescription>
                     </div>
                      <Button onClick={() => openItemModal()}>
                        <Plus className="h-4 w-4 mr-2" />
@@ -695,17 +740,11 @@ const BudgetEditor = () => {
                                  className="border-0 p-0 h-8 text-right focus-visible:ring-1"
                                />
                              </TableCell>
-                             <TableCell>
-                               <Input
-                                 type="number"
-                                 step="0.01"
-                                 min="0"
-                                 value={item.sale_price}
-                                 onChange={(e) => updateItem(item.id, "sale_price", parseFloat(e.target.value) || 0)}
-                                 onFocus={(e) => e.target.select()}
-                                 className="border-0 p-0 h-8 text-right focus-visible:ring-1"
-                               />
-                             </TableCell>
+                              <TableCell>
+                                <div className="text-right text-sm font-medium text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                                  {formatCurrency(item.sale_price)}
+                                </div>
+                              </TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(item.subtotal)}
                             </TableCell>
@@ -721,10 +760,43 @@ const BudgetEditor = () => {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+                     </Table>
+                   )}
+                   
+                   {/* Environment Summary */}
+                   {items.length > 0 && (
+                     <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                       <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
+                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                         <div className="text-center">
+                           <div className="text-sm text-muted-foreground">Subtotal dos Itens</div>
+                           <div className="text-lg font-semibold">{formatCurrency(environmentTotals.itemsTotal)}</div>
+                         </div>
+                         <div className="text-center">
+                           <div className="text-sm text-muted-foreground">Mão de Obra Total</div>
+                           <div className="text-lg font-semibold text-blue-600">{formatCurrency(environmentTotals.laborTotal)}</div>
+                         </div>
+                         <div className="text-center">
+                           <div className="text-sm text-muted-foreground">RT Total</div>
+                           <div className="text-lg font-semibold text-green-600">{formatCurrency(environmentTotals.rtTotal)}</div>
+                         </div>
+                         <div className="text-center">
+                           <div className="text-sm text-muted-foreground">Valor de Compra</div>
+                           <div className="text-lg font-semibold text-orange-600">{formatCurrency(environmentTotals.purchaseTotal)}</div>
+                         </div>
+                         <div className="text-center">
+                           <div className="text-sm text-muted-foreground">Lucro Total</div>
+                           <div className="text-lg font-semibold text-purple-600">{formatCurrency(environmentTotals.profitTotal)}</div>
+                         </div>
+                         <div className="text-center">
+                           <div className="text-sm text-muted-foreground">Total Final</div>
+                           <div className="text-xl font-bold text-primary">{formatCurrency(environmentTotals.finalTotal)}</div>
+                         </div>
+                       </div>
+                     </div>
+                   )}
+                 </CardContent>
+               </Card>
             ) : (
               <Card>
                 <CardContent className="flex items-center justify-center py-16">
