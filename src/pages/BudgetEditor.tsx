@@ -230,8 +230,9 @@ const BudgetEditor = () => {
     const itemsTotal = environmentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const purchaseTotal = environmentItems.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
     
-    // Labor: fixed value per item
-    const laborTotal = settings.labor_value * environmentItems.length;
+    // Labor: fixed value per unit (quantity)
+    const totalQuantity = environmentItems.reduce((sum, item) => sum + item.quantity, 0);
+    const laborTotal = settings.labor_value * totalQuantity;
     
     // RT: calculate total RT applied to all items
     let rtTotal = 0;
@@ -339,13 +340,14 @@ const BudgetEditor = () => {
   const updateEnvironmentSubtotal = async () => {
     if (!selectedEnvId) return;
     
-    const currentItems = items.filter(item => item.environment_id === selectedEnvId);
-    const subtotal = currentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    // Calculate final total including items, labor, and RT
+    const totals = calculateEnvironmentTotals();
+    const finalTotal = totals.finalTotal;
     
     try {
       const { error } = await supabase
         .from("environments")
-        .update({ subtotal })
+        .update({ subtotal: finalTotal })
         .eq("id", selectedEnvId);
 
       if (error) throw error;
@@ -353,7 +355,7 @@ const BudgetEditor = () => {
       setEnvironments(prev => 
         prev.map(env => 
           env.id === selectedEnvId 
-            ? { ...env, subtotal }
+            ? { ...env, subtotal: finalTotal }
             : env
         )
       );
