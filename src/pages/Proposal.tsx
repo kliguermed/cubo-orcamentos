@@ -319,7 +319,7 @@ const Proposal = () => {
           <div className="border-t pt-6 mb-8">
             <h2 className="text-lg font-semibold mb-4 text-gray-900">RESUMO FINANCEIRO</h2>
             
-            <div className="bg-gray-50 p-4 rounded">
+            <div className="bg-gray-50 p-4 rounded mb-6">
               <table className="w-full text-sm">
                 <tbody>
                   <tr>
@@ -338,12 +338,19 @@ const Proposal = () => {
                       <td className="py-1 text-right font-medium">{formatCurrency(totals.rtCost)}</td>
                     </tr>
                   )}
-                  <tr className="border-t border-gray-300 font-bold text-lg">
-                    <td className="py-2">VALOR TOTAL DO PROJETO:</td>
-                    <td className="py-2 text-right">{formatCurrency(totals.total)}</td>
-                  </tr>
                 </tbody>
               </table>
+            </div>
+
+            {/* Valor Total Final em Destaque */}
+            <div className="bg-primary/10 border-2 border-primary/20 p-6 rounded-lg text-center">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">VALOR TOTAL DO PROJETO</h3>
+              <div className="text-3xl font-bold text-primary">
+                {formatCurrency(totals.total)}
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Inclui todos os itens e mão de obra
+              </p>
             </div>
           </div>
 

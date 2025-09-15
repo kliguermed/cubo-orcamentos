@@ -70,6 +70,13 @@ const BudgetEditor = () => {
     }
   }, [selectedEnvId]);
 
+  // Update budget total when environments or settings change
+  useEffect(() => {
+    if (environments.length > 0 && settings) {
+      updateBudgetTotalAmount();
+    }
+  }, [environments.length, settings]);
+
   const fetchBudgetData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -213,7 +220,23 @@ const BudgetEditor = () => {
     return salePrice;
   };
 
-  // Calculate environment totals
+  // Calculate environment totals for any environment (not just selected)
+  const getEnvironmentFinalTotal = (envId: string, envItems: Item[]) => {
+    if (!settings) return 0;
+    
+    const environmentItems = envItems.filter(item => item.environment_id === envId);
+    
+    // Calculate items total
+    const itemsTotal = environmentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    
+    // Labor: fixed value per unit (quantity)
+    const totalQuantity = environmentItems.reduce((sum, item) => sum + item.quantity, 0);
+    const laborTotal = settings.labor_value * totalQuantity;
+    
+    return itemsTotal + laborTotal;
+  };
+
+  // Calculate environment totals for selected environment
   const calculateEnvironmentTotals = () => {
     if (!selectedEnvId || !settings) return {
       itemsTotal: 0,
@@ -359,8 +382,45 @@ const BudgetEditor = () => {
             : env
         )
       );
+
+      // Update total budget amount
+      await updateBudgetTotalAmount();
     } catch (error: any) {
       console.error("Erro ao atualizar subtotal do ambiente:", error);
+    }
+  };
+
+  const updateBudgetTotalAmount = async () => {
+    if (!id || !settings) return;
+    
+    try {
+      // Get all items from all environments
+      const { data: allItems, error: itemsError } = await supabase
+        .from("items")
+        .select("*")
+        .in("environment_id", environments.map(env => env.id));
+
+      if (itemsError) throw itemsError;
+
+      // Calculate total amount across all environments
+      let totalAmount = 0;
+      
+      environments.forEach(env => {
+        const envItems = allItems?.filter(item => item.environment_id === env.id) || [];
+        totalAmount += getEnvironmentFinalTotal(env.id, envItems);
+      });
+
+      // Update budget total_amount
+      const { error } = await supabase
+        .from("budgets")
+        .update({ total_amount: totalAmount })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setBudget(prev => prev ? { ...prev, total_amount: totalAmount } : null);
+    } catch (error: any) {
+      console.error("Erro ao atualizar total do orçamento:", error);
     }
   };
 
@@ -643,12 +703,12 @@ const BudgetEditor = () => {
                        onClick={() => setSelectedEnvId(env.id)}
                      >
                        <div className="flex justify-between items-center">
-                         <div>
-                           <div className="font-medium">{env.name}</div>
-                           <div className="text-sm text-muted-foreground">
-                             {formatCurrency(env.subtotal)}
-                           </div>
-                         </div>
+                          <div>
+                            <div className="font-medium">{env.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatCurrency(getEnvironmentFinalTotal(env.id, items))}
+                            </div>
+                          </div>
                          <Button
                            variant="ghost"
                            size="sm"
