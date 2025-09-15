@@ -98,37 +98,40 @@ const Proposal = () => {
     return new Date(dateString).toLocaleDateString("pt-BR");
   };
 
+  const calculateEnvironmentLabor = (env: Environment) => {
+    if (!settings) return 0;
+    
+    const totalQuantity = env.items.reduce((sum, item) => sum + item.quantity, 0);
+    return settings.labor_value * totalQuantity;
+  };
+
   const calculateTotals = () => {
     const subtotalItems = environments.reduce((sum, env) => 
       sum + env.items.reduce((envSum, item) => envSum + item.subtotal, 0), 0
     );
 
-    let laborCost = 0;
+    let totalLaborCost = 0;
     let rtCost = 0;
 
     if (settings) {
-      // Calculate labor cost
-      if (settings.labor_type === "fixed") {
-        laborCost = settings.labor_value;
-      } else if (settings.labor_type === "percentage") {
-        laborCost = subtotalItems * (settings.labor_value / 100);
-      }
+      // Calculate total labor cost (sum of all environments)
+      totalLaborCost = environments.reduce((sum, env) => sum + calculateEnvironmentLabor(env), 0);
 
       // Calculate RT cost (only if separate)
       if (settings.rt_distribution === "separate") {
         if (settings.rt_type === "fixed") {
           rtCost = settings.rt_value;
         } else if (settings.rt_type === "percentage") {
-          rtCost = subtotalItems * (settings.rt_value / 100);
+          rtCost = (subtotalItems + totalLaborCost) * (settings.rt_value / 100);
         }
       }
     }
 
-    const total = subtotalItems + laborCost + rtCost;
+    const total = subtotalItems + totalLaborCost + rtCost;
 
     return {
       subtotalItems,
-      laborCost,
+      laborCost: totalLaborCost,
       rtCost,
       total
     };
@@ -282,10 +285,28 @@ const Proposal = () => {
                   <tfoot>
                     <tr className="bg-gray-50">
                       <td colSpan={3} className="border border-gray-300 px-3 py-2 font-medium text-right">
+                        Subtotal Itens:
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2 text-right font-medium">
+                        {formatCurrency(env.items.reduce((sum, item) => sum + item.subtotal, 0))}
+                      </td>
+                    </tr>
+                    {settings && calculateEnvironmentLabor(env) > 0 && (
+                      <tr className="bg-gray-50">
+                        <td colSpan={3} className="border border-gray-300 px-3 py-2 font-medium text-right">
+                          Mão de Obra ({env.items.reduce((sum, item) => sum + item.quantity, 0)} un. × {formatCurrency(settings.labor_value)}):
+                        </td>
+                        <td className="border border-gray-300 px-3 py-2 text-right font-medium">
+                          {formatCurrency(calculateEnvironmentLabor(env))}
+                        </td>
+                      </tr>
+                    )}
+                    <tr className="bg-gray-100">
+                      <td colSpan={3} className="border border-gray-300 px-3 py-2 font-bold text-right">
                         Total do Ambiente:
                       </td>
                       <td className="border border-gray-300 px-3 py-2 text-right font-bold">
-                        {formatCurrency(env.items.reduce((sum, item) => sum + item.subtotal, 0))}
+                        {formatCurrency(env.items.reduce((sum, item) => sum + item.subtotal, 0) + calculateEnvironmentLabor(env))}
                       </td>
                     </tr>
                   </tfoot>
@@ -307,7 +328,7 @@ const Proposal = () => {
                   </tr>
                   {totals.laborCost > 0 && (
                     <tr>
-                      <td className="py-1">Mão de Obra:</td>
+                      <td className="py-1">Mão de Obra Total:</td>
                       <td className="py-1 text-right font-medium">{formatCurrency(totals.laborCost)}</td>
                     </tr>
                   )}
@@ -318,7 +339,7 @@ const Proposal = () => {
                     </tr>
                   )}
                   <tr className="border-t border-gray-300 font-bold text-lg">
-                    <td className="py-2">VALOR TOTAL:</td>
+                    <td className="py-2">VALOR TOTAL DO PROJETO:</td>
                     <td className="py-2 text-right">{formatCurrency(totals.total)}</td>
                   </tr>
                 </tbody>
