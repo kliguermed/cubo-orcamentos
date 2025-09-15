@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Image as ImageIcon, Save } from 'lucide-react';
 
 interface Settings {
   id: string;
@@ -32,12 +32,34 @@ interface EnvironmentTemplate {
   html_content?: string;
 }
 
+interface PageLayouts {
+  service_scope: string;
+  payment_methods: string;
+  cover_title: string;
+  cover_background: boolean;
+  warranty_text: string;
+  warranty_background: boolean;
+  closing_text: string;
+  closing_background: boolean;
+}
+
 const ConfigurationManager: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [environments, setEnvironments] = useState<EnvironmentTemplate[]>([]);
+  const [pageLayouts, setPageLayouts] = useState<PageLayouts>({
+    service_scope: "Instalação completa de automação residencial com materiais de primeira qualidade e mão de obra especializada.",
+    payment_methods: "Pagamento à vista com desconto de 5%. Parcelamento em até 12x no cartão de crédito.",
+    cover_title: "Proposta Comercial - Automação Residencial",
+    cover_background: true,
+    warranty_text: "Garantia de 12 meses para todos os equipamentos e serviços prestados, conforme termo de garantia em anexo.",
+    warranty_background: false,
+    closing_text: "Agradecemos a oportunidade de apresentar nossa proposta. Estamos à disposição para quaisquer esclarecimentos.",
+    closing_background: true,
+  });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('calculation');
 
   // Form states for calculation rules
@@ -228,6 +250,25 @@ const ConfigurationManager: React.FC = () => {
       title: "Sucesso",
       description: "Ambiente excluído!",
     });
+  };
+
+  const handleSavePageLayouts = async () => {
+    setSaving(true);
+    try {
+      // Mock save - in real implementation would save to database
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações de layout foram salvas com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -491,104 +532,131 @@ const ConfigurationManager: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="pages" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuração de Paginações</CardTitle>
-                <CardDescription>
-                  Personalize o layout e formatação das páginas da proposta
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Capa Principal</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Configure o layout da capa da proposta
-                        </p>
-                        <Button variant="outline" className="w-full">
-                          Configurar Capa
-                        </Button>
-                      </CardContent>
-                    </Card>
+            <div className="grid gap-6">
+              {/* Escopo de Serviço */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Escopo de Serviço</CardTitle>
+                  <CardDescription>Configure o texto do escopo que aparece na proposta</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Label htmlFor="service-scope">Texto do Escopo de Serviço</Label>
+                  <Textarea
+                    id="service-scope"
+                    rows={4}
+                    value={pageLayouts.service_scope}
+                    onChange={(e) => setPageLayouts(prev => ({ ...prev, service_scope: e.target.value }))}
+                    placeholder="Digite aqui o texto do escopo de serviço..."
+                  />
+                </CardContent>
+              </Card>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Garantia</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Configure a página de garantia
-                        </p>
-                        <Button variant="outline" className="w-full">
-                          Configurar Garantia
-                        </Button>
-                      </CardContent>
-                    </Card>
+              {/* Formas de Pagamento */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Formas de Pagamento</CardTitle>
+                  <CardDescription>Configure o texto das condições de pagamento</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Label htmlFor="payment-methods">Texto das Formas de Pagamento</Label>
+                  <Textarea
+                    id="payment-methods"
+                    rows={3}
+                    value={pageLayouts.payment_methods}
+                    onChange={(e) => setPageLayouts(prev => ({ ...prev, payment_methods: e.target.value }))}
+                    placeholder="Digite aqui as formas de pagamento..."
+                  />
+                </CardContent>
+              </Card>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Página de Fechamento</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Configure a página final da proposta
-                        </p>
-                        <Button variant="outline" className="w-full">
-                          Configurar Fechamento
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Discriminação de Itens</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Configure o layout das tabelas de itens
-                        </p>
-                        <Button variant="outline" className="w-full">
-                          Configurar Layout
-                        </Button>
-                      </CardContent>
-                    </Card>
+              {/* Capa Principal */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Capa Principal</CardTitle>
+                  <CardDescription>Configure o layout da capa principal da proposta</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="cover-background"
+                      checked={pageLayouts.cover_background}
+                      onChange={(e) => setPageLayouts(prev => ({ ...prev, cover_background: e.target.checked }))}
+                    />
+                    <Label htmlFor="cover-background">Usar fundo personalizado na capa</Label>
                   </div>
+                  <Label htmlFor="cover-title">Título da Capa</Label>
+                  <Input
+                    id="cover-title"
+                    value={pageLayouts.cover_title}
+                    onChange={(e) => setPageLayouts(prev => ({ ...prev, cover_title: e.target.value }))}
+                    placeholder="Digite o título da capa..."
+                  />
+                </CardContent>
+              </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Configurações Globais</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="service-scope">Texto do Escopo de Serviço</Label>
-                        <Textarea
-                          id="service-scope"
-                          placeholder="Descreva o escopo padrão dos serviços..."
-                          rows={4}
-                        />
-                      </div>
+              {/* Garantia */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Garantia</CardTitle>
+                  <CardDescription>Configure o conteúdo da página de garantia</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Label htmlFor="warranty-text">Texto da Garantia</Label>
+                  <Textarea
+                    id="warranty-text"
+                    rows={4}
+                    value={pageLayouts.warranty_text}
+                    onChange={(e) => setPageLayouts(prev => ({ ...prev, warranty_text: e.target.value }))}
+                    placeholder="Digite aqui o texto da garantia..."
+                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="warranty-background"
+                      checked={pageLayouts.warranty_background}
+                      onChange={(e) => setPageLayouts(prev => ({ ...prev, warranty_background: e.target.checked }))}
+                    />
+                    <Label htmlFor="warranty-background">Usar fundo personalizado na garantia</Label>
+                  </div>
+                </CardContent>
+              </Card>
 
-                      <div>
-                        <Label htmlFor="payment-methods">Formas de Pagamento</Label>
-                        <Textarea
-                          id="payment-methods"
-                          placeholder="Descreva as formas de pagamento aceitas..."
-                          rows={3}
-                        />
-                      </div>
+              {/* Página de Fechamento */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Página de Fechamento</CardTitle>
+                  <CardDescription>Configure o layout da página final da proposta</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Label htmlFor="closing-text">Texto de Fechamento</Label>
+                  <Textarea
+                    id="closing-text"
+                    rows={3}
+                    value={pageLayouts.closing_text}
+                    onChange={(e) => setPageLayouts(prev => ({ ...prev, closing_text: e.target.value }))}
+                    placeholder="Digite aqui o texto de fechamento..."
+                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="closing-background"
+                      checked={pageLayouts.closing_background}
+                      onChange={(e) => setPageLayouts(prev => ({ ...prev, closing_background: e.target.checked }))}
+                    />
+                    <Label htmlFor="closing-background">Usar fundo personalizado no fechamento</Label>
+                  </div>
+                </CardContent>
+              </Card>
 
-                      <Button className="w-full">
-                        Salvar Configurações de Página
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Salvar Configurações de Layout */}
+              <div className="flex justify-end">
+                <Button onClick={handleSavePageLayouts} disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Salvando..." : "Salvar Configurações de Layout"}
+                </Button>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

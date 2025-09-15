@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Dashboard from "@/components/Dashboard";
 import Auth from "./pages/Auth";
-import Settings from "./pages/Settings";
+
 import BudgetEditor from "./pages/BudgetEditor";
 import Proposal from "./pages/Proposal";
 import ConfigurationManager from "./pages/ConfigurationManager";
@@ -45,14 +45,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Proposal />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
                 </ProtectedRoute>
               }
             />

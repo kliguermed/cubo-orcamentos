@@ -153,7 +153,7 @@ const Dashboard = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/configuration-manager")}
             >
               <Settings className="h-4 w-4 mr-2" />
               Configurações
