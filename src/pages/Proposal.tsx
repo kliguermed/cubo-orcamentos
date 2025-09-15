@@ -334,7 +334,7 @@ const Proposal = () => {
                   )}
                   {totals.rtCost > 0 && (
                     <tr>
-                      <td className="py-1">Responsabilidade Técnica:</td>
+                      <td className="py-1">Reserva Tecnica:</td>
                       <td className="py-1 text-right font-medium">{formatCurrency(totals.rtCost)}</td>
                     </tr>
                   )}
