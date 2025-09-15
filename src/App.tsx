@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import BudgetEditor from "./pages/BudgetEditor";
 import Proposal from "./pages/Proposal";
+import ConfigurationManager from "./pages/ConfigurationManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configuration-manager"
+              element={
+                <ProtectedRoute>
+                  <ConfigurationManager />
                 </ProtectedRoute>
               }
             />

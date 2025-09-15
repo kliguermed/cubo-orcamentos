@@ -293,9 +293,9 @@ const Proposal = () => {
                     </tr>
                     {settings && calculateEnvironmentLabor(env) > 0 && (
                       <tr className="bg-gray-50">
-                        <td colSpan={3} className="border border-gray-300 px-3 py-2 font-medium text-right">
-                          Mão de Obra ({env.items.reduce((sum, item) => sum + item.quantity, 0)} un. × {formatCurrency(settings.labor_value)}):
-                        </td>
+                         <td colSpan={3} className="border border-gray-300 px-3 py-2 font-medium text-right">
+                           Mão de Obra:
+                         </td>
                         <td className="border border-gray-300 px-3 py-2 text-right font-medium">
                           {formatCurrency(calculateEnvironmentLabor(env))}
                         </td>

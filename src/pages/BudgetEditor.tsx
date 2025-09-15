@@ -723,10 +723,18 @@ const BudgetEditor = () => {
                      </div>
                    ))}
                  </div>
-                <Button onClick={addEnvironment} variant="outline" className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Ambiente
-                </Button>
+                 <div className="flex justify-between items-center mb-4">
+                   <Button onClick={addEnvironment} variant="outline">
+                     <Plus className="h-4 w-4 mr-2" />
+                     Adicionar Ambiente
+                   </Button>
+                   <Button
+                     variant="secondary"
+                     onClick={() => navigate('/configuration-manager')}
+                   >
+                     Configurar Sistema
+                   </Button>
+                 </div>
               </CardContent>
             </Card>
           </div>
