@@ -9,7 +9,7 @@ import Dashboard from "@/components/Dashboard";
 import Auth from "./pages/Auth";
 
 import BudgetEditor from "./pages/BudgetEditor";
-import Proposal from "./pages/Proposal";
+import ProposalPage from "./pages/ProposalPage";
 import ConfigurationManager from "./pages/ConfigurationManager";
 import NotFound from "./pages/NotFound";
 
@@ -44,7 +44,7 @@ const App = () => (
               path="/proposal/:id"
               element={
                 <ProtectedRoute>
-                  <Proposal />
+                  <ProposalPage />
                 </ProtectedRoute>
               }
             />

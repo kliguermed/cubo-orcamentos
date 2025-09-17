@@ -92,6 +92,7 @@ export type Database = {
       environments: {
         Row: {
           budget_id: string
+          cover_image_url: string | null
           created_at: string
           description: string | null
           id: string
@@ -102,6 +103,7 @@ export type Database = {
         }
         Insert: {
           budget_id: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -112,6 +114,7 @@ export type Database = {
         }
         Update: {
           budget_id?: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
