@@ -81,7 +81,41 @@ const ConfigurationManager: React.FC = () => {
   useEffect(() => {
     loadSettings();
     loadEnvironments();
+    loadPageLayouts();
   }, []);
+
+  const loadPageLayouts = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase
+        .from('page_layouts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading page layouts:', error);
+        return;
+      }
+
+      if (data) {
+        setPageLayouts({
+          service_scope: data.service_scope || pageLayouts.service_scope,
+          payment_methods: data.payment_methods || pageLayouts.payment_methods,
+          cover_title: data.cover_title || pageLayouts.cover_title,
+          cover_background: data.cover_background ?? pageLayouts.cover_background,
+          warranty_text: data.warranty_text || pageLayouts.warranty_text,
+          warranty_background: data.warranty_background ?? pageLayouts.warranty_background,
+          closing_text: data.closing_text || pageLayouts.closing_text,
+          closing_background: data.closing_background ?? pageLayouts.closing_background,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading page layouts:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -131,12 +165,33 @@ const ConfigurationManager: React.FC = () => {
   };
 
   const loadEnvironments = async () => {
-    // For now, we'll use mock data since we need to create the environment_templates table
-    setEnvironments([
-      { id: '1', name: 'Cozinha', description: 'Ambiente da cozinha residencial', html_content: '' },
-      { id: '2', name: 'Sala de Estar', description: 'Ambiente da sala de estar', html_content: '' },
-      { id: '3', name: 'Quarto', description: 'Ambiente do quarto', html_content: '' },
-    ]);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase
+        .from('environment_templates')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading environments:', error);
+        return;
+      }
+
+      const mappedEnvironments: EnvironmentTemplate[] = (data || []).map(env => ({
+        id: env.id,
+        name: env.name,
+        description: env.description || '',
+        background_image: env.background_image_url || '',
+        html_content: env.html_content || '',
+      }));
+
+      setEnvironments(mappedEnvironments);
+    } catch (error) {
+      console.error('Error loading environments:', error);
+    }
   };
 
   const saveSettings = async () => {
@@ -197,7 +252,7 @@ const ConfigurationManager: React.FC = () => {
     }
   };
 
-  const handleSaveEnvironment = () => {
+  const handleSaveEnvironment = async () => {
     if (!envName) {
       toast({
         title: "Erro",
@@ -207,33 +262,53 @@ const ConfigurationManager: React.FC = () => {
       return;
     }
 
-    // For now, just update local state
-    if (editingEnvironment) {
-      setEnvironments(prev => prev.map(env => 
-        env.id === editingEnvironment.id 
-          ? { ...env, name: envName, description: envDescription, html_content: envHtmlContent }
-          : env
-      ));
-    } else {
-      const newEnv: EnvironmentTemplate = {
-        id: Date.now().toString(),
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const envData = {
+        user_id: session.user.id,
         name: envName,
         description: envDescription,
         html_content: envHtmlContent,
       };
-      setEnvironments(prev => [...prev, newEnv]);
+
+      if (editingEnvironment) {
+        const { error } = await supabase
+          .from('environment_templates')
+          .update(envData)
+          .eq('id', editingEnvironment.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('environment_templates')
+          .insert([envData]);
+
+        if (error) throw error;
+      }
+
+      setShowEnvironmentForm(false);
+      setEditingEnvironment(null);
+      setEnvName('');
+      setEnvDescription('');
+      setEnvHtmlContent('');
+
+      toast({
+        title: "Sucesso",
+        description: editingEnvironment ? "Ambiente atualizado!" : "Ambiente criado!",
+      });
+
+      // Reload environments
+      await loadEnvironments();
+    } catch (error: any) {
+      console.error('Error saving environment:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar ambiente.",
+        variant: "destructive",
+      });
     }
-
-    setShowEnvironmentForm(false);
-    setEditingEnvironment(null);
-    setEnvName('');
-    setEnvDescription('');
-    setEnvHtmlContent('');
-
-    toast({
-      title: "Sucesso",
-      description: editingEnvironment ? "Ambiente atualizado!" : "Ambiente criado!",
-    });
   };
 
   const handleEditEnvironment = (env: EnvironmentTemplate) => {
@@ -244,23 +319,64 @@ const ConfigurationManager: React.FC = () => {
     setShowEnvironmentForm(true);
   };
 
-  const handleDeleteEnvironment = (envId: string) => {
-    setEnvironments(prev => prev.filter(env => env.id !== envId));
-    toast({
-      title: "Sucesso",
-      description: "Ambiente excluído!",
-    });
+  const handleDeleteEnvironment = async (envId: string) => {
+    try {
+      const { error } = await supabase
+        .from('environment_templates')
+        .delete()
+        .eq('id', envId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Ambiente excluído!",
+      });
+
+      // Reload environments
+      await loadEnvironments();
+    } catch (error: any) {
+      console.error('Error deleting environment:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir ambiente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSavePageLayouts = async () => {
     setSaving(true);
     try {
-      // Mock save - in real implementation would save to database
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const layoutData = {
+        user_id: session.user.id,
+        service_scope: pageLayouts.service_scope,
+        payment_methods: pageLayouts.payment_methods,
+        cover_title: pageLayouts.cover_title,
+        cover_background: pageLayouts.cover_background,
+        warranty_text: pageLayouts.warranty_text,
+        warranty_background: pageLayouts.warranty_background,
+        closing_text: pageLayouts.closing_text,
+        closing_background: pageLayouts.closing_background,
+      };
+
+      const { error } = await supabase
+        .from('page_layouts')
+        .upsert([layoutData], {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
       toast({
         title: "Configurações salvas",
         description: "As configurações de layout foram salvas com sucesso",
       });
     } catch (error: any) {
+      console.error('Error saving page layouts:', error);
       toast({
         title: "Erro ao salvar",
         description: error.message,

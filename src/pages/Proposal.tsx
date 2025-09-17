@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +42,17 @@ interface Settings {
   payment_terms: string;
 }
 
+interface PageLayouts {
+  service_scope: string;
+  payment_methods: string;
+  cover_title: string;
+  cover_background: boolean;
+  warranty_text: string;
+  warranty_background: boolean;
+  closing_text: string;
+  closing_background: boolean;
+}
+
 const Proposal = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -52,6 +62,7 @@ const Proposal = () => {
   const [budget, setBudget] = useState<Budget | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [pageLayouts, setPageLayouts] = useState<PageLayouts | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -61,13 +72,14 @@ const Proposal = () => {
 
   const fetchProposalData = async () => {
     try {
-      const [budgetRes, envRes, settingsRes] = await Promise.all([
+      const [budgetRes, envRes, settingsRes, layoutsRes] = await Promise.all([
         supabase.from("budgets").select("*").eq("id", id).single(),
         supabase.from("environments").select(`
           *,
           items (*)
         `).eq("budget_id", id),
-        supabase.from("settings").select("*").single()
+        supabase.from("settings").select("*").single(),
+        supabase.from("page_layouts").select("*").single()
       ]);
 
       if (budgetRes.error) throw budgetRes.error;
@@ -76,6 +88,7 @@ const Proposal = () => {
       setBudget(budgetRes.data as Budget);
       setEnvironments(envRes.data || []);
       setSettings(settingsRes.data);
+      setPageLayouts(layoutsRes.data || null);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar proposta",
@@ -202,167 +215,157 @@ const Proposal = () => {
       </header>
 
       {/* Proposal Content */}
-      <main className="container mx-auto px-4 py-8 print:px-0 print:py-4">
-        <div className="max-w-4xl mx-auto bg-white print:bg-transparent print:shadow-none">
-          {/* Header with Logo */}
-          <div className="text-center border-b pb-6 mb-8 print:border-black">
-            <img 
-              src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" 
-              alt="Cubo Casa Inteligente" 
-              className="h-16 w-auto mx-auto mb-4"
-            />
-            <h1 className="text-2xl font-bold text-gray-900">PROPOSTA COMERCIAL</h1>
-            <p className="text-gray-600">Protocolo #{budget.protocol_number}</p>
-          </div>
-
-          {/* Client Information */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">DADOS DO CLIENTE</h2>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Nome:</span> {budget.client_name}
-              </div>
-              {budget.client_cpf_cnpj && (
-                <div>
-                  <span className="font-medium">CPF/CNPJ:</span> {budget.client_cpf_cnpj}
-                </div>
-              )}
-              {budget.client_phone && (
-                <div>
-                  <span className="font-medium">Telefone:</span> {budget.client_phone}
-                </div>
-              )}
-              {budget.client_email && (
-                <div>
-                  <span className="font-medium">E-mail:</span> {budget.client_email}
-                </div>
-              )}
-              <div>
-                <span className="font-medium">Data:</span> {formatDate(budget.created_at)}
-              </div>
+      <main className="print:px-0 print:py-0">
+        <div className="bg-white print:bg-transparent print:shadow-none">
+          
+          {/* Main Cover Page */}
+          <section className="h-screen text-white flex flex-col justify-center items-center text-center relative bg-cover bg-center print:break-after-page" 
+                   style={{backgroundImage: 'url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)'}}>
+            <div className="absolute inset-0 bg-black/40"></div>
+            <div className="relative z-10">
+              <img 
+                src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png" 
+                alt="Logo" 
+                className="w-24 h-auto mx-auto mb-5"
+              />
+              <h1 className="text-4xl font-bold mb-3">
+                {pageLayouts?.cover_title || 'Proposta Comercial'}
+              </h1>
+              <p className="text-xl mb-2">
+                <strong>Cliente:</strong> {budget.client_name}
+              </p>
+              <p className="text-lg">
+                {formatDate(budget.created_at)}
+              </p>
             </div>
-          </div>
+          </section>
 
-          {/* Environments and Items */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-6 text-gray-900">ITENS DO ORÇAMENTO</h2>
-            
-            {environments.map((env) => (
-              <div key={env.id} className="mb-8">
-                <h3 className="text-md font-semibold mb-4 text-gray-800 bg-gray-50 p-3 rounded">
-                  {env.name}
-                </h3>
-                
+          {/* Environment Pages */}
+          {environments.map((env, index) => (
+            <div key={env.id}>
+              {/* Environment Cover Page */}
+              <section className="h-screen text-white flex flex-col justify-center items-center text-center relative bg-cover bg-center print:break-after-page" 
+                       style={{backgroundImage: `url(${index % 2 === 0 ? 'https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg' : 'https://reugilk.s3.us-east-2.amazonaws.com/cubo/Showroom-Cubo/foto008.jpg'})`}}>
+                <div className="absolute inset-0 bg-black/40"></div>
+                <div className="relative z-10">
+                  <img 
+                    src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png" 
+                    alt="Logo" 
+                    className="w-24 h-auto mx-auto mb-5"
+                  />
+                  <h1 className="text-4xl font-bold mb-3">{env.name}</h1>
+                  <p className="text-lg">
+                    {formatDate(budget.created_at)}
+                  </p>
+                </div>
+              </section>
+
+              {/* Environment Content Page */}
+              <section className="p-8 max-w-4xl mx-auto print:break-after-page">
                 {env.description && (
-                  <p className="text-sm text-gray-600 mb-4">{env.description}</p>
+                  <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                    {env.description}
+                  </p>
                 )}
-                
-                <table className="w-full text-sm border-collapse border border-gray-300 mb-4">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-gray-300 px-3 py-2 text-left">Item</th>
-                      <th className="border border-gray-300 px-3 py-2 text-center w-20">Qtd</th>
-                      <th className="border border-gray-300 px-3 py-2 text-right w-32">Valor Unit.</th>
-                      <th className="border border-gray-300 px-3 py-2 text-right w-32">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {env.items.map((item) => (
-                      <tr key={item.id}>
-                        <td className="border border-gray-300 px-3 py-2">{item.name}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-center">
-                          {item.quantity.toFixed(2).replace('.00', '')}
-                        </td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">
-                          {formatCurrency(item.sale_price)}
-                        </td>
-                        <td className="border border-gray-300 px-3 py-2 text-right font-medium">
-                          {formatCurrency(item.subtotal)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-50">
-                      <td colSpan={3} className="border border-gray-300 px-3 py-2 font-medium text-right">
-                        Subtotal Itens:
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-right font-medium">
-                        {formatCurrency(env.items.reduce((sum, item) => sum + item.subtotal, 0))}
-                      </td>
-                    </tr>
-                    {settings && calculateEnvironmentLabor(env) > 0 && (
-                      <tr className="bg-gray-50">
-                         <td colSpan={3} className="border border-gray-300 px-3 py-2 font-medium text-right">
-                           Mão de Obra:
-                         </td>
-                        <td className="border border-gray-300 px-3 py-2 text-right font-medium">
-                          {formatCurrency(calculateEnvironmentLabor(env))}
-                        </td>
-                      </tr>
-                    )}
-                    <tr className="bg-gray-100">
-                      <td colSpan={3} className="border border-gray-300 px-3 py-2 font-bold text-right">
-                        Total do Ambiente:
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-right font-bold">
-                        {formatCurrency(env.items.reduce((sum, item) => sum + item.subtotal, 0) + calculateEnvironmentLabor(env))}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            ))}
-          </div>
 
-          {/* Total Summary */}
-          <div className="border-t pt-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">RESUMO FINANCEIRO</h2>
-            
-            <div className="bg-gray-50 p-4 rounded mb-6">
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr>
-                    <td className="py-1">Subtotal dos Itens:</td>
-                    <td className="py-1 text-right font-medium">{formatCurrency(totals.subtotalItems)}</td>
-                  </tr>
-                  {totals.laborCost > 0 && (
-                    <tr>
-                      <td className="py-1">Mão de Obra Total:</td>
-                      <td className="py-1 text-right font-medium">{formatCurrency(totals.laborCost)}</td>
-                    </tr>
-                  )}
-                  {totals.rtCost > 0 && (
-                    <tr>
-                      <td className="py-1">Reserva Tecnica:</td>
-                      <td className="py-1 text-right font-medium">{formatCurrency(totals.rtCost)}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                {/* Items as Cards */}
+                <div className="space-y-4 mb-8">
+                  {env.items.map((item) => (
+                    <div key={item.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.name}</h3>
+                      <div className="text-gray-600">
+                        <p className="mb-1">Qtd: {item.quantity.toString().replace('.00', '')}</p>
+                        <p className="text-xl font-bold text-gray-900">{formatCurrency(item.subtotal)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Environment Total */}
+                <div className="bg-gray-900 text-white p-6 rounded-lg text-center">
+                  <p className="text-xl font-bold">
+                    Total {env.name}: {formatCurrency(env.items.reduce((sum, item) => sum + item.subtotal, 0) + calculateEnvironmentLabor(env))}
+                  </p>
+                </div>
+              </section>
             </div>
+          ))}
 
-            {/* Valor Total Final em Destaque */}
-            <div className="bg-primary/10 border-2 border-primary/20 p-6 rounded-lg text-center">
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">VALOR TOTAL DO PROJETO</h3>
-              <div className="text-3xl font-bold text-primary">
-                {formatCurrency(totals.total)}
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Inclui todos os itens e mão de obra
+          {/* Warranty/Observations Page */}
+          <section className="p-16 text-center print:break-after-page bg-gray-50">
+            <img 
+              src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/cubo-garantia.png" 
+              alt="Logo Cubo Casa Inteligente" 
+              className="max-w-40 mx-auto mb-8"
+            />
+
+            <div className="max-w-3xl mx-auto space-y-6 text-gray-700 leading-relaxed">
+              <p>
+                Após a confirmação da proposta, será enviado um contrato de prestação de serviços para confirmação de ambas as partes. 
+                Neste, também constarão todos os valores, garantias e prazos estabelecidos.
+              </p>
+
+              <p>
+                Em seguida, realizamos os investimentos necessários em equipamentos estipulados anteriormente em contrato.
+              </p>
+
+              <p>
+                {pageLayouts?.warranty_text || 'Todos produtos utilizados em nossas instalações contam com 1 ano de garantia e 1 ano de garantia na prestação de serviço.'}
+              </p>
+
+              <p>
+                Após a realização do trabalho, ficaremos disponíveis por até 60 dias para esclarecimento de dúvidas, ajustes e criação de cenas extras, caso necessário.
+              </p>
+
+              <p>
+                <strong>OBS:</strong> O pagamento dos cabos de rede deverá ser realizado após instalação e finalização do projeto, de acordo com a metragem utilizada.
+              </p>
+
+              <p className="text-sm text-gray-500 mt-8">
+                @cubocasainteligente
               </p>
             </div>
-          </div>
+          </section>
 
-          {/* Payment Terms */}
-          {settings.payment_terms && (
-            <div className="border-t pt-6">
-              <h2 className="text-lg font-semibold mb-4 text-gray-900">CONDIÇÕES DE PAGAMENTO</h2>
-              <p className="text-sm text-gray-700 whitespace-pre-line">
-                {settings.payment_terms}
-              </p>
+          {/* Final Page - Payment and Contact */}
+          <section className="p-8 text-center bg-gray-100 min-h-screen flex flex-col justify-center">
+            <div className="max-w-2xl mx-auto">
+              {/* Total do Projeto */}
+              <div className="bg-primary/10 border-2 border-primary/20 p-8 rounded-lg text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-700 mb-4">VALOR TOTAL DO PROJETO</h3>
+                <div className="text-4xl font-bold text-primary mb-4">
+                  {formatCurrency(totals.total)}
+                </div>
+                <p className="text-gray-600">
+                  Inclui todos os itens e mão de obra
+                </p>
+              </div>
+
+              {/* Payment Terms */}
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4">Forma de Pagamento:</h3>
+                <div className="text-gray-700 whitespace-pre-line">
+                  {pageLayouts?.payment_methods || settings.payment_terms || 'Pix com 5% desconto\nEntrada 50%\nSaldo até 6x no cartão'}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="text-gray-600">
+                <p>Contato: contato@cubocasainteligente.com.br</p>
+                <p>+55 (44) 9 8407-1331</p>
+                <p className="mt-4">Umuarama - PR, {formatDate(budget.created_at)}</p>
+              </div>
+
+              {/* Closing Text */}
+              {pageLayouts?.closing_text && (
+                <div className="mt-8 p-6 bg-white rounded-lg shadow-sm">
+                  <p className="text-gray-700 italic">
+                    {pageLayouts.closing_text}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </section>
         </div>
       </main>
     </div>

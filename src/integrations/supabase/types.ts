@@ -56,6 +56,39 @@ export type Database = {
         }
         Relationships: []
       }
+      environment_templates: {
+        Row: {
+          background_image_url: string | null
+          created_at: string
+          description: string | null
+          html_content: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          background_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          html_content?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          background_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          html_content?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       environments: {
         Row: {
           budget_id: string
@@ -140,6 +173,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_layouts: {
+        Row: {
+          closing_background: boolean | null
+          closing_text: string | null
+          cover_background: boolean | null
+          cover_title: string | null
+          created_at: string
+          id: string
+          payment_methods: string | null
+          service_scope: string | null
+          updated_at: string
+          user_id: string
+          warranty_background: boolean | null
+          warranty_text: string | null
+        }
+        Insert: {
+          closing_background?: boolean | null
+          closing_text?: string | null
+          cover_background?: boolean | null
+          cover_title?: string | null
+          created_at?: string
+          id?: string
+          payment_methods?: string | null
+          service_scope?: string | null
+          updated_at?: string
+          user_id: string
+          warranty_background?: boolean | null
+          warranty_text?: string | null
+        }
+        Update: {
+          closing_background?: boolean | null
+          closing_text?: string | null
+          cover_background?: boolean | null
+          cover_title?: string | null
+          created_at?: string
+          id?: string
+          payment_methods?: string | null
+          service_scope?: string | null
+          updated_at?: string
+          user_id?: string
+          warranty_background?: boolean | null
+          warranty_text?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
