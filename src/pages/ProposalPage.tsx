@@ -338,8 +338,8 @@ const ProposalPage: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Subtotal dos Itens:</span>
-                    <span className="font-medium">{formatCurrency(environment.subtotal)}</span>
+                    <span>Valor de Compra:</span>
+                    <span className="font-medium">{formatCurrency(calculateEnvironmentPurchaseTotal(environment))}</span>
                   </div>
                   {settings && (
                     <div className="flex justify-between">
@@ -347,11 +347,23 @@ const ProposalPage: React.FC = () => {
                       <span className="font-medium">{formatCurrency(calculateEnvironmentLabor(environment))}</span>
                     </div>
                   )}
+                  <div className="flex justify-between">
+                    <span>Custo Total:</span>
+                    <span className="font-medium">{formatCurrency(calculateEnvironmentCostTotal(environment))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Lucro Total:</span>
+                    <span className="font-medium">{formatCurrency(calculateEnvironmentProfitTotal(environment))}</span>
+                  </div>
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between text-lg font-bold">
-                      <span>Subtotal do Ambiente:</span>
+                      <span>Total Final:</span>
                       <span>
-                        {formatCurrency(environment.subtotal + calculateEnvironmentLabor(environment))}
+                        {formatCurrency(
+                          environment.subtotal + 
+                          calculateEnvironmentLabor(environment) + 
+                          calculateEnvironmentRT(environment)
+                        )}
                       </span>
                     </div>
                   </div>
@@ -430,39 +442,15 @@ const ProposalPage: React.FC = () => {
           />
           
           <div className="bg-white/10 backdrop-blur-sm p-8 rounded-lg mb-8">
-            <h1 className="text-2xl font-bold mb-6">Detalhamento por Ambiente</h1>
-            
-            <div className="space-y-4 text-sm mb-6">
-              {environments.map((env) => (
-                <div key={env.id} className="bg-white/5 p-4 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-2">{env.name}</h3>
-                  <div className="space-y-1 text-left">
-                    <div className="flex justify-between">
-                      <span>Itens:</span>
-                      <span>{formatCurrency(env.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Mão de obra:</span>
-                      <span>{formatCurrency(calculateEnvironmentLabor(env))}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold border-t pt-1">
-                      <span>Subtotal:</span>
-                      <span>{formatCurrency(env.subtotal + calculateEnvironmentLabor(env))}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t-2 border-white/20 pt-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xl font-bold">Total do Projeto:</span>
-                <span className="text-3xl font-bold text-green-400">
-                  {formatCurrency(environments.reduce((sum, env) => 
-                    sum + env.subtotal + calculateEnvironmentLabor(env), 0
-                  ))}
-                </span>
-              </div>
+            <h1 className="text-3xl font-bold mb-6">Total do Projeto</h1>
+            <p className="text-5xl font-bold text-green-400 mb-2">
+              {formatCurrency(totals.grandTotal)}
+            </p>
+            <div className="text-sm opacity-90 space-y-1">
+              <p>Valor de Compra: {formatCurrency(totals.purchaseTotal)}</p>
+              <p>Mão de Obra: {formatCurrency(totals.totalLabor)}</p>
+              <p>Custo Total: {formatCurrency(totals.costTotal)}</p>
+              <p>Lucro Total: {formatCurrency(totals.profitTotal)}</p>
             </div>
           </div>
 
@@ -482,10 +470,10 @@ const ProposalPage: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">📞 Contato</h2>
               <div className="text-sm text-left space-y-1">
-                <p><strong>Cubo Automação</strong></p>
-                <p>📧 contato@cuboautomacao.com</p>
-                <p>📱 (11) 99999-9999</p>
-                <p>🌐 www.cuboautomacao.com</p>
+                <p><strong>Cubo Casa Inteligente</strong></p>
+                <p>📧 contato@cubocasainteligente.com.br</p>
+                <p>📱 (44) 98407-1331</p>
+                <p>🌐 www.cubocasainteligente.com.br</p>
               </div>
             </div>
           </div>
@@ -496,7 +484,7 @@ const ProposalPage: React.FC = () => {
                 "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
             </p>
             <p className="text-sm opacity-75 mt-4">
-              São Paulo, {formatDate(new Date().toISOString())}
+              Umuarama - PR, {formatDate(new Date().toISOString())}
             </p>
           </div>
         </div>
