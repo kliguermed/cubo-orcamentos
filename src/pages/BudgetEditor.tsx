@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2 } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EnvironmentModal } from "@/components/EnvironmentModal";
 import { ItemModal } from "@/components/ItemModal";
+import { GlobalSummaryModal } from "@/components/GlobalSummaryModal";
 
 interface Budget {
   id: string;
@@ -57,6 +58,7 @@ const BudgetEditor = () => {
   const [editingEnvironment, setEditingEnvironment] = useState<Environment | null>(null);
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [globalSummaryOpen, setGlobalSummaryOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -243,6 +245,7 @@ const BudgetEditor = () => {
       laborTotal: 0,
       rtTotal: 0,
       purchaseTotal: 0,
+      costTotal: 0,
       profitTotal: 0,
       finalTotal: 0
     };
@@ -276,15 +279,16 @@ const BudgetEditor = () => {
       }
     });
     
-    // Profit = (Items total + Labor) - Purchase total
-    const profitTotal = (itemsTotal + laborTotal) - purchaseTotal;
     const finalTotal = itemsTotal + laborTotal;
+    const costTotal = purchaseTotal + laborTotal + rtTotal;
+    const profitTotal = finalTotal - costTotal;
     
     return {
       itemsTotal,
       laborTotal,
       rtTotal,
       purchaseTotal,
+      costTotal,
       profitTotal,
       finalTotal
     };
@@ -584,6 +588,96 @@ const BudgetEditor = () => {
     }).format(value);
   };
 
+  // Calculate global project totals
+  const calculateGlobalTotals = async () => {
+    if (!settings) return {
+      purchaseTotal: 0,
+      laborTotal: 0,
+      rtTotal: 0,
+      costTotal: 0,
+      profitTotal: 0,
+      finalTotal: 0,
+      allItems: []
+    };
+
+    try {
+      const { data: allItems, error } = await supabase
+        .from("items")
+        .select("*, environments(name)")
+        .in("environment_id", environments.map(env => env.id));
+
+      if (error) throw error;
+
+      const itemsWithEnvName = allItems || [];
+      
+      let globalPurchaseTotal = 0;
+      let globalLaborTotal = 0;
+      let globalRtTotal = 0;
+      let globalFinalTotal = 0;
+
+      environments.forEach(env => {
+        const envItems = itemsWithEnvName.filter(item => item.environment_id === env.id);
+        
+        // Purchase total
+        const envPurchaseTotal = envItems.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
+        globalPurchaseTotal += envPurchaseTotal;
+        
+        // Items total (with markup)
+        const envItemsTotal = envItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+        
+        // Labor total
+        const envTotalQuantity = envItems.reduce((sum, item) => sum + item.quantity, 0);
+        const envLaborTotal = settings.labor_value * envTotalQuantity;
+        globalLaborTotal += envLaborTotal;
+        
+        // RT total
+        let envRtTotal = 0;
+        envItems.forEach(item => {
+          const purchaseValue = item.purchase_price * item.quantity;
+          let saleWithMarkup = purchaseValue;
+          
+          if (settings.markup_percentage > 0) {
+            saleWithMarkup = saleWithMarkup * (1 + settings.markup_percentage / 100);
+          }
+          
+          if (settings.rt_type === "percentage" && settings.rt_value > 0) {
+            envRtTotal += saleWithMarkup * (settings.rt_value / 100);
+          } else if (settings.rt_type === "fixed" && settings.rt_value > 0) {
+            envRtTotal += settings.rt_value;
+          }
+        });
+        globalRtTotal += envRtTotal;
+        
+        // Final total for this environment
+        globalFinalTotal += envItemsTotal + envLaborTotal;
+      });
+
+      const globalCostTotal = globalPurchaseTotal + globalLaborTotal + globalRtTotal;
+      const globalProfitTotal = globalFinalTotal - globalCostTotal;
+
+      return {
+        purchaseTotal: globalPurchaseTotal,
+        laborTotal: globalLaborTotal,
+        rtTotal: globalRtTotal,
+        costTotal: globalCostTotal,
+        profitTotal: globalProfitTotal,
+        finalTotal: globalFinalTotal,
+        allItems: itemsWithEnvName
+      };
+    } catch (error) {
+      console.error("Erro ao calcular totais globais:", error);
+      return {
+        purchaseTotal: 0,
+        laborTotal: 0,
+        rtTotal: 0,
+        costTotal: 0,
+        profitTotal: 0,
+        finalTotal: 0,
+        allItems: []
+      };
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -722,19 +816,41 @@ const BudgetEditor = () => {
                        </div>
                      </div>
                    ))}
-                 </div>
-                 <div className="flex justify-between items-center mb-4">
-                   <Button onClick={addEnvironment} variant="outline">
-                     <Plus className="h-4 w-4 mr-2" />
-                     Adicionar Ambiente
-                   </Button>
-                   <Button
-                     variant="secondary"
-                     onClick={() => navigate('/configuration-manager')}
-                   >
-                     Configurar Sistema
-                   </Button>
-                 </div>
+                  </div>
+                  
+                  {/* Global Project Value */}
+                  {environments.length > 0 && (
+                    <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                      <div 
+                        className="flex justify-between items-center cursor-pointer hover:bg-primary/10 p-2 rounded transition-colors"
+                        onClick={() => setGlobalSummaryOpen(true)}
+                      >
+                        <div>
+                          <div className="font-semibold text-primary">💰 Valor Global do Projeto</div>
+                          <div className="text-2xl font-bold text-primary">
+                            {formatCurrency(budget?.total_amount || 0)}
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Resumo
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <Button onClick={addEnvironment} variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Ambiente
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => navigate('/configuration-manager')}
+                    >
+                      Configurar Sistema
+                    </Button>
+                  </div>
               </CardContent>
             </Card>
           </div>
@@ -833,38 +949,38 @@ const BudgetEditor = () => {
                      </Table>
                    )}
                    
-                   {/* Environment Summary */}
-                   {items.length > 0 && (
-                     <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                       <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                         <div className="text-center">
-                           <div className="text-sm text-muted-foreground">Subtotal dos Itens</div>
-                           <div className="text-lg font-semibold">{formatCurrency(environmentTotals.itemsTotal)}</div>
-                         </div>
-                         <div className="text-center">
-                           <div className="text-sm text-muted-foreground">Mão de Obra Total</div>
-                           <div className="text-lg font-semibold text-blue-600">{formatCurrency(environmentTotals.laborTotal)}</div>
-                         </div>
-                         <div className="text-center">
-                           <div className="text-sm text-muted-foreground">RT Total</div>
-                           <div className="text-lg font-semibold text-green-600">{formatCurrency(environmentTotals.rtTotal)}</div>
-                         </div>
-                         <div className="text-center">
-                           <div className="text-sm text-muted-foreground">Valor de Compra</div>
-                           <div className="text-lg font-semibold text-orange-600">{formatCurrency(environmentTotals.purchaseTotal)}</div>
-                         </div>
-                         <div className="text-center">
-                           <div className="text-sm text-muted-foreground">Lucro Total</div>
-                           <div className="text-lg font-semibold text-purple-600">{formatCurrency(environmentTotals.profitTotal)}</div>
-                         </div>
-                         <div className="text-center">
-                           <div className="text-sm text-muted-foreground">Total Final</div>
-                           <div className="text-xl font-bold text-primary">{formatCurrency(environmentTotals.finalTotal)}</div>
-                         </div>
-                       </div>
-                     </div>
-                   )}
+                    {/* Environment Summary */}
+                    {items.length > 0 && (
+                      <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Valor de Compra</div>
+                            <div className="text-lg font-semibold">{formatCurrency(environmentTotals.purchaseTotal)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Mão de Obra</div>
+                            <div className="text-lg font-semibold text-blue-600">{formatCurrency(environmentTotals.laborTotal)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">RT Total</div>
+                            <div className="text-lg font-semibold text-green-600">{formatCurrency(environmentTotals.rtTotal)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Custo Total</div>
+                            <div className="text-lg font-semibold text-orange-600">{formatCurrency(environmentTotals.costTotal)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Lucro Total</div>
+                            <div className="text-lg font-semibold text-purple-600">{formatCurrency(environmentTotals.profitTotal)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Total Final</div>
+                            <div className="text-xl font-bold text-primary">{formatCurrency(environmentTotals.finalTotal)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                  </CardContent>
                </Card>
             ) : (
@@ -896,14 +1012,20 @@ const BudgetEditor = () => {
         onDelete={deleteEnvironment}
       />
       
-          <ItemModal
-            item={editingItem}
-            open={itemModalOpen}
-            onOpenChange={setItemModalOpen}
-            onSave={saveItem}
-            environmentId={selectedEnvId || ""}
-            settings={settings}
-          />
+      <ItemModal
+        item={editingItem}
+        open={itemModalOpen}
+        onOpenChange={setItemModalOpen}
+        onSave={saveItem}
+        environmentId={selectedEnvId || ""}
+        settings={settings}
+      />
+
+      <GlobalSummaryModal
+        open={globalSummaryOpen}
+        onOpenChange={setGlobalSummaryOpen}
+        calculateGlobalTotals={calculateGlobalTotals}
+      />
     </div>
   );
 };
