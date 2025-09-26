@@ -20,6 +20,7 @@ interface Item {
   name: string;
   quantity: number;
   sale_price: number;
+  purchase_price: number;
   subtotal: number;
 }
 
@@ -94,6 +95,7 @@ const ProposalPage: React.FC = () => {
             name,
             quantity,
             sale_price,
+            purchase_price,
             subtotal
           )
         `)
@@ -148,10 +150,8 @@ const ProposalPage: React.FC = () => {
   const calculateEnvironmentLabor = (env: Environment): number => {
     if (!settings) return 0;
     
-    if (settings.labor_type === 'percentage') {
-      return env.subtotal * (settings.labor_value / 100);
-    }
-    return settings.labor_value;
+    const totalQuantity = env.items.reduce((sum, item) => sum + item.quantity, 0);
+    return settings.labor_value * totalQuantity;
   };
 
   const calculateEnvironmentRT = (env: Environment): number => {
@@ -167,13 +167,33 @@ const ProposalPage: React.FC = () => {
     return 0;
   };
 
+  const calculateEnvironmentPurchaseTotal = (env: Environment): number => {
+    return env.items.reduce((sum, item) => sum + (item.purchase_price * item.quantity), 0);
+  };
+
+  const calculateEnvironmentCostTotal = (env: Environment): number => {
+    const purchaseTotal = calculateEnvironmentPurchaseTotal(env);
+    const laborTotal = calculateEnvironmentLabor(env);
+    const rtTotal = calculateEnvironmentRT(env);
+    return purchaseTotal + laborTotal + rtTotal;
+  };
+
+  const calculateEnvironmentProfitTotal = (env: Environment): number => {
+    const finalTotal = env.subtotal + calculateEnvironmentLabor(env) + calculateEnvironmentRT(env);
+    const costTotal = calculateEnvironmentCostTotal(env);
+    return finalTotal - costTotal;
+  };
+
   const calculateTotals = () => {
+    const purchaseTotal = environments.reduce((sum, env) => sum + calculateEnvironmentPurchaseTotal(env), 0);
     const subtotal = environments.reduce((sum, env) => sum + env.subtotal, 0);
     const totalLabor = environments.reduce((sum, env) => sum + calculateEnvironmentLabor(env), 0);
     const totalRT = environments.reduce((sum, env) => sum + calculateEnvironmentRT(env), 0);
+    const costTotal = purchaseTotal + totalLabor + totalRT;
     const grandTotal = subtotal + totalLabor + totalRT;
+    const profitTotal = grandTotal - costTotal;
     
-    return { subtotal, totalLabor, totalRT, grandTotal };
+    return { purchaseTotal, subtotal, totalLabor, totalRT, costTotal, profitTotal, grandTotal };
   };
 
   const handlePrint = () => {
@@ -318,24 +338,26 @@ const ProposalPage: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Subtotal de Itens:</span>
-                    <span className="font-medium">{formatCurrency(environment.subtotal)}</span>
+                    <span>Valor de Compra:</span>
+                    <span className="font-medium">{formatCurrency(calculateEnvironmentPurchaseTotal(environment))}</span>
                   </div>
                   {settings && (
-                    <>
-                      <div className="flex justify-between">
-                        <span>Mão de Obra:</span>
-                        <span className="font-medium">{formatCurrency(calculateEnvironmentLabor(environment))}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>RT:</span>
-                        <span className="font-medium">{formatCurrency(calculateEnvironmentRT(environment))}</span>
-                      </div>
-                    </>
+                    <div className="flex justify-between">
+                      <span>Mão de Obra:</span>
+                      <span className="font-medium">{formatCurrency(calculateEnvironmentLabor(environment))}</span>
+                    </div>
                   )}
+                  <div className="flex justify-between">
+                    <span>Custo Total:</span>
+                    <span className="font-medium">{formatCurrency(calculateEnvironmentCostTotal(environment))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Lucro Total:</span>
+                    <span className="font-medium">{formatCurrency(calculateEnvironmentProfitTotal(environment))}</span>
+                  </div>
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between text-lg font-bold">
-                      <span>Total do Ambiente:</span>
+                      <span>Total Final:</span>
                       <span>
                         {formatCurrency(
                           environment.subtotal + 
@@ -425,9 +447,10 @@ const ProposalPage: React.FC = () => {
               {formatCurrency(totals.grandTotal)}
             </p>
             <div className="text-sm opacity-90 space-y-1">
-              <p>Subtotal: {formatCurrency(totals.subtotal)}</p>
+              <p>Valor de Compra: {formatCurrency(totals.purchaseTotal)}</p>
               <p>Mão de Obra: {formatCurrency(totals.totalLabor)}</p>
-              <p>RT: {formatCurrency(totals.totalRT)}</p>
+              <p>Custo Total: {formatCurrency(totals.costTotal)}</p>
+              <p>Lucro Total: {formatCurrency(totals.profitTotal)}</p>
             </div>
           </div>
 
