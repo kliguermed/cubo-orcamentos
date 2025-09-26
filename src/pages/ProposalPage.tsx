@@ -314,7 +314,7 @@ const ProposalPage: React.FC = () => {
     }}>
         <div className="max-w-4xl mx-auto">
           <header className="text-center mb-8">
-            <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
+            <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
             <h1 className="text-2xl font-bold">Garantia e Observações</h1>
           </header>
 
@@ -400,7 +400,7 @@ const ProposalPage: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">📞 Contato</h2>
               <div className="text-sm text-left space-y-1">
-                <p><strong>Cubo Automação</strong></p>
+                <p><strong>Cubo Casa Inteligente</strong></p>
                 <p>📧 contato@cubocasainteligente.com.br</p>
                 <p>📱 (44) 98407-1331</p>
                 <p>🌐 www.cubocasainteligente.com.br</p>
@@ -413,7 +413,7 @@ const ProposalPage: React.FC = () => {
               {pageLayouts?.closing_text || "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
             </p>
             <p className="text-sm opacity-75 mt-4">
-              São Paulo, {formatDate(new Date().toISOString())}
+              Umuarama- PR, {formatDate(new Date().toISOString())}
             </p>
           </div>
         </div>
