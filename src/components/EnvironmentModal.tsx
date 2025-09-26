@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +51,7 @@ export const EnvironmentModal = ({
   const [description, setDescription] = useState(environment?.description || "");
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [saving, setSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleSave = async () => {
     if (!environment || !name.trim()) return;
@@ -87,7 +89,7 @@ export const EnvironmentModal = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={isMobile ? "max-w-[95vw] p-4" : "sm:max-w-md"}>
           <DialogHeader>
             <DialogTitle>Editar Ambiente</DialogTitle>
             <DialogDescription>
@@ -117,23 +119,31 @@ export const EnvironmentModal = ({
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className={isMobile ? "flex-col gap-2" : "gap-2"}>
             {onDelete && (
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteAlert(true)}
-                className="mr-auto"
+                className={isMobile ? "w-full order-last" : "mr-auto"}
+                size={isMobile ? "sm" : "default"}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir
               </Button>
             )}
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className={isMobile ? "w-full" : ""}
+              size={isMobile ? "sm" : "default"}
+            >
               Cancelar
             </Button>
             <Button 
               onClick={handleSave}
               disabled={!name.trim() || saving}
+              className={isMobile ? "w-full" : ""}
+              size={isMobile ? "sm" : "default"}
             >
               {saving ? "Salvando..." : "Salvar"}
             </Button>

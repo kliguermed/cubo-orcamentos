@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Item {
   id?: string;
@@ -42,6 +43,7 @@ export const ItemModal = ({
   const [quantity, setQuantity] = useState(item?.quantity || 1);
   const [purchasePrice, setPurchasePrice] = useState(item?.purchase_price || 0);
   const [saving, setSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   const calculateSalePrice = () => {
     if (!settings) return purchasePrice;
@@ -108,7 +110,7 @@ export const ItemModal = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={isMobile ? "max-w-[95vw] p-4" : "sm:max-w-md"}>
         <DialogHeader>
           <DialogTitle>
             {item ? "Editar Item" : "Adicionar Item"}
@@ -185,13 +187,18 @@ export const ItemModal = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className={isMobile ? "flex-col gap-2" : ""}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className={isMobile ? "w-full" : ""}
+          >
             Cancelar
           </Button>
           <Button 
             onClick={handleSave}
             disabled={!isValid || saving}
+            className={isMobile ? "w-full" : ""}
           >
             {saving ? "Salvando..." : "Salvar"}
           </Button>

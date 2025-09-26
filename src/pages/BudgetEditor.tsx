@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +48,7 @@ const BudgetEditor = () => {
   const {
     toast
   } = useToast();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
@@ -599,27 +601,27 @@ const BudgetEditor = () => {
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
+        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-4">
+          <Button variant="outline" size={isMobile ? "sm" : "sm"} onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            {!isMobile && "Voltar"}
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">Orçamento #{budget.protocol_number}</h1>
-            <p className="text-sm text-muted-foreground">{budget.client_name}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-bold truncate">Orçamento #{budget.protocol_number}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{budget.client_name}</p>
           </div>
-          <div className="ml-auto">
-            <Badge variant={budget.status === "finished" ? "default" : "secondary"}>
+          <div className="shrink-0">
+            <Badge variant={budget.status === "finished" ? "default" : "secondary"} className="text-xs">
               {budget.status === "finished" ? "Finalizado" : "Em edição"}
             </Badge>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className={isMobile ? "space-y-6" : "grid lg:grid-cols-3 gap-8"}>
           {/* Left Column - Client & Environments */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className={isMobile ? "space-y-4" : "lg:col-span-1 space-y-6"}>
             {/* Client Info */}
             <Card>
               <CardHeader>
@@ -662,12 +664,12 @@ const BudgetEditor = () => {
                   client_email: e.target.value
                 } : null)} />
                  </div>
-                 <div className="pt-4">
-                   <Button onClick={saveBudgetClient} className="w-full">
-                     <Save className="h-4 w-4 mr-2" />
-                     Salvar dados do cliente
-                   </Button>
-                 </div>
+                  <div className="pt-4">
+                    <Button onClick={saveBudgetClient} className="w-full" size={isMobile ? "sm" : "default"}>
+                      <Save className="h-4 w-4 mr-2" />
+                      {isMobile ? "Salvar" : "Salvar dados do cliente"}
+                    </Button>
+                  </div>
                </CardContent>
              </Card>
 
@@ -713,112 +715,182 @@ const BudgetEditor = () => {
                       </div>
                     </div>}
                   
-                  <div className="flex justify-between items-center mb-4">
-                    <Button onClick={addEnvironment} variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Ambiente
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate('/configuration-manager')}>
-                      Configurar Sistema
-                    </Button>
-                  </div>
+                   <div className={isMobile ? "space-y-2" : "flex justify-between items-center mb-4"}>
+                     <Button onClick={addEnvironment} variant="outline" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                       <Plus className="h-4 w-4 mr-2" />
+                       {isMobile ? "Novo Ambiente" : "Adicionar Ambiente"}
+                     </Button>
+                     <Button variant="secondary" onClick={() => navigate('/configuration-manager')} size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                       {isMobile ? "Configurar" : "Configurar Sistema"}
+                     </Button>
+                   </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Right Column - Items */}
-          <div className="lg:col-span-2">
+          <div className={isMobile ? "" : "lg:col-span-2"}>
             {selectedEnvironment ? <Card>
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                       <CardTitle>{selectedEnvironment.name}</CardTitle>
-                       <CardDescription>
-                         Total do ambiente: {formatCurrency(environmentTotals.finalTotal)}
+                  <div className={isMobile ? "space-y-3" : "flex justify-between items-start"}>
+                    <div className={isMobile ? "text-center" : ""}>
+                       <CardTitle className={isMobile ? "text-lg" : ""}>{selectedEnvironment.name}</CardTitle>
+                       <CardDescription className={isMobile ? "text-sm" : ""}>
+                         Total: {formatCurrency(environmentTotals.finalTotal)}
                        </CardDescription>
                     </div>
-                     <Button onClick={() => openItemModal()}>
+                     <Button onClick={() => openItemModal()} size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
                        <Plus className="h-4 w-4 mr-2" />
-                       Adicionar Item
+                       {isMobile ? "Novo Item" : "Adicionar Item"}
                      </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {items.length === 0 ? <div className="text-center py-8">
                        <p className="text-muted-foreground mb-4">Nenhum item adicionado ainda</p>
-                       <Button onClick={() => openItemModal()}>
+                       <Button onClick={() => openItemModal()} size={isMobile ? "sm" : "default"}>
                          <Plus className="h-4 w-4 mr-2" />
-                         Adicionar primeiro item
+                         {isMobile ? "Novo Item" : "Adicionar primeiro item"}
                        </Button>
-                     </div> : <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item</TableHead>
-                          <TableHead className="w-20">Qtd</TableHead>
-                          <TableHead className="w-32">Preço Compra</TableHead>
-                          <TableHead className="w-32">Preço Venda</TableHead>
-                          <TableHead className="w-32">Subtotal</TableHead>
-                          <TableHead className="w-16"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {items.map(item => <TableRow key={item.id}>
-                            <TableCell>
-                              <Input value={item.name} onChange={e => updateItem(item.id, "name", e.target.value)} className="border-0 p-0 h-8 focus-visible:ring-1" />
-                            </TableCell>
-                             <TableCell>
-                               <Input type="number" step="0.01" min="0" value={item.quantity} onChange={e => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} className="border-0 p-0 h-8 text-center focus-visible:ring-1" />
-                             </TableCell>
-                             <TableCell>
-                               <Input type="number" step="0.01" min="0" value={item.purchase_price} onChange={e => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} className="border-0 p-0 h-8 text-right focus-visible:ring-1" />
-                             </TableCell>
-                              <TableCell>
-                                <div className="text-right text-sm font-medium text-muted-foreground bg-muted/30 rounded px-2 py-1">
-                                  {formatCurrency(item.sale_price)}
-                                </div>
-                              </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(item.subtotal)}
-                            </TableCell>
-                             <TableCell>
-                               <Button variant="outline" size="sm" onClick={() => deleteItem(item.id)}>
-                                 <Trash2 className="h-4 w-4" />
+                     </div> : isMobile ? (
+                       <div className="space-y-3">
+                         {items.map(item => (
+                           <Card key={item.id} className="p-3">
+                             <div className="space-y-3">
+                               <div>
+                                 <Label className="text-xs text-muted-foreground">Nome do Item</Label>
+                                 <Input 
+                                   value={item.name} 
+                                   onChange={e => updateItem(item.id, "name", e.target.value)} 
+                                   className="h-8 text-sm"
+                                 />
+                               </div>
+                               <div className="grid grid-cols-2 gap-2">
+                                 <div>
+                                   <Label className="text-xs text-muted-foreground">Qtd</Label>
+                                   <Input 
+                                     type="number" 
+                                     step="0.01" 
+                                     min="0" 
+                                     value={item.quantity} 
+                                     onChange={e => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} 
+                                     onFocus={e => e.target.select()} 
+                                     className="h-8 text-center text-sm"
+                                   />
+                                 </div>
+                                 <div>
+                                   <Label className="text-xs text-muted-foreground">Preço Compra</Label>
+                                   <Input 
+                                     type="number" 
+                                     step="0.01" 
+                                     min="0" 
+                                     value={item.purchase_price} 
+                                     onChange={e => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)} 
+                                     onFocus={e => e.target.select()} 
+                                     className="h-8 text-right text-sm"
+                                   />
+                                 </div>
+                               </div>
+                               <div className="grid grid-cols-2 gap-2">
+                                 <div>
+                                   <Label className="text-xs text-muted-foreground">Preço Venda</Label>
+                                   <div className="text-sm font-medium text-muted-foreground bg-muted/30 rounded px-2 py-1 h-8 flex items-center justify-end">
+                                     {formatCurrency(item.sale_price)}
+                                   </div>
+                                 </div>
+                                 <div>
+                                   <Label className="text-xs text-muted-foreground">Subtotal</Label>
+                                   <div className="text-sm font-bold text-primary bg-primary/10 rounded px-2 py-1 h-8 flex items-center justify-end">
+                                     {formatCurrency(item.subtotal)}
+                                   </div>
+                                 </div>
+                               </div>
+                               <Button 
+                                 variant="outline" 
+                                 size="sm" 
+                                 onClick={() => deleteItem(item.id)}
+                                 className="w-full text-destructive hover:text-destructive"
+                               >
+                                 <Trash2 className="h-4 w-4 mr-2" />
+                                 Remover Item
                                </Button>
-                             </TableCell>
-                          </TableRow>)}
-                      </TableBody>
-                     </Table>}
+                             </div>
+                           </Card>
+                         ))}
+                       </div>
+                     ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="min-w-[200px]">Item</TableHead>
+                              <TableHead className="w-20">Qtd</TableHead>
+                              <TableHead className="w-32">Preço Compra</TableHead>
+                              <TableHead className="w-32">Preço Venda</TableHead>
+                              <TableHead className="w-32">Subtotal</TableHead>
+                              <TableHead className="w-16"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map(item => <TableRow key={item.id}>
+                                <TableCell className="min-w-[200px]">
+                                  <Input value={item.name} onChange={e => updateItem(item.id, "name", e.target.value)} className="border-0 p-0 h-8 focus-visible:ring-1" />
+                                </TableCell>
+                                 <TableCell>
+                                   <Input type="number" step="0.01" min="0" value={item.quantity} onChange={e => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} className="border-0 p-0 h-8 text-center focus-visible:ring-1" />
+                                 </TableCell>
+                                 <TableCell>
+                                   <Input type="number" step="0.01" min="0" value={item.purchase_price} onChange={e => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} className="border-0 p-0 h-8 text-right focus-visible:ring-1" />
+                                 </TableCell>
+                                  <TableCell>
+                                    <div className="text-right text-sm font-medium text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                                      {formatCurrency(item.sale_price)}
+                                    </div>
+                                  </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {formatCurrency(item.subtotal)}
+                                </TableCell>
+                                 <TableCell>
+                                   <Button variant="outline" size="sm" onClick={() => deleteItem(item.id)}>
+                                     <Trash2 className="h-4 w-4" />
+                                   </Button>
+                                 </TableCell>
+                              </TableRow>)}
+                          </TableBody>
+                         </Table>
+                       </div>
+                     )}
                    
-                    {/* Environment Summary */}
-                    {items.length > 0 && <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Valor de Compra</div>
-                            <div className="text-lg font-semibold">{formatCurrency(environmentTotals.purchaseTotal)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Mão de Obra</div>
-                            <div className="text-lg font-semibold text-blue-600">{formatCurrency(environmentTotals.laborTotal)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">RT Total</div>
-                            <div className="text-lg font-semibold text-green-600">{formatCurrency(environmentTotals.rtTotal)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Custo Total</div>
-                            <div className="text-lg font-semibold text-orange-600">{formatCurrency(environmentTotals.costTotal)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Lucro Total</div>
-                            <div className="text-lg font-semibold text-purple-600">{formatCurrency(environmentTotals.profitTotal)}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Total Final</div>
-                            <div className="text-xl font-bold text-primary">{formatCurrency(environmentTotals.finalTotal)}</div>
-                          </div>
-                        </div>
-                      </div>}
+                     {/* Environment Summary */}
+                     {items.length > 0 && <div className="mt-6 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                         <h3 className={isMobile ? "text-base font-semibold mb-3 text-center" : "text-lg font-semibold mb-4"}>Resumo do Ambiente</h3>
+                         <div className={isMobile ? "grid grid-cols-2 gap-3" : "grid grid-cols-2 md:grid-cols-3 gap-4"}>
+                           <div className="text-center">
+                             <div className={isMobile ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>Valor de Compra</div>
+                             <div className={isMobile ? "text-sm font-semibold" : "text-lg font-semibold"}>{formatCurrency(environmentTotals.purchaseTotal)}</div>
+                           </div>
+                           <div className="text-center">
+                             <div className={isMobile ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>Mão de Obra</div>
+                             <div className={isMobile ? "text-sm font-semibold text-blue-600" : "text-lg font-semibold text-blue-600"}>{formatCurrency(environmentTotals.laborTotal)}</div>
+                           </div>
+                           <div className="text-center">
+                             <div className={isMobile ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>RT Total</div>
+                             <div className={isMobile ? "text-sm font-semibold text-green-600" : "text-lg font-semibold text-green-600"}>{formatCurrency(environmentTotals.rtTotal)}</div>
+                           </div>
+                           <div className="text-center">
+                             <div className={isMobile ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>Custo Total</div>
+                             <div className={isMobile ? "text-sm font-semibold text-orange-600" : "text-lg font-semibold text-orange-600"}>{formatCurrency(environmentTotals.costTotal)}</div>
+                           </div>
+                           <div className="text-center">
+                             <div className={isMobile ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>Lucro Total</div>
+                             <div className={isMobile ? "text-sm font-semibold text-purple-600" : "text-lg font-semibold text-purple-600"}>{formatCurrency(environmentTotals.profitTotal)}</div>
+                           </div>
+                           <div className="text-center">
+                             <div className={isMobile ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>Total Final</div>
+                             <div className={isMobile ? "text-lg font-bold text-primary" : "text-xl font-bold text-primary"}>{formatCurrency(environmentTotals.finalTotal)}</div>
+                           </div>
+                         </div>
+                       </div>}
                  </CardContent>
                </Card> : <Card>
                 <CardContent className="flex items-center justify-center py-16">
