@@ -201,12 +201,14 @@ const BudgetEditor = () => {
     if (!settings) return 0;
     const environmentItems = envItems.filter(item => item.environment_id === envId);
 
-    // Calculate items total
+    // Calculate items total from individual item subtotals
     const itemsTotal = environmentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
 
     // Labor: fixed value per unit (quantity)
     const totalQuantity = environmentItems.reduce((sum, item) => sum + item.quantity, 0);
     const laborTotal = settings.labor_value * totalQuantity;
+    
+    // Return final total (items + labor)
     return itemsTotal + laborTotal;
   };
 
@@ -323,19 +325,19 @@ const BudgetEditor = () => {
   const updateEnvironmentSubtotal = async () => {
     if (!selectedEnvId) return;
 
-    // Calculate final total including items, labor, and RT
+    // Calculate ONLY items total (not including labor)
     const totals = calculateEnvironmentTotals();
-    const finalTotal = totals.finalTotal;
+    const itemsSubtotal = totals.itemsTotal;
     try {
       const {
         error
       } = await supabase.from("environments").update({
-        subtotal: finalTotal
+        subtotal: itemsSubtotal
       }).eq("id", selectedEnvId);
       if (error) throw error;
       setEnvironments(prev => prev.map(env => env.id === selectedEnvId ? {
         ...env,
-        subtotal: finalTotal
+        subtotal: itemsSubtotal
       } : env));
 
       // Update total budget amount
