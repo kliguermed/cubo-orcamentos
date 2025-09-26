@@ -111,8 +111,8 @@ const ProposalPage: React.FC = () => {
       const {
         data: layoutsData,
         error: layoutsError
-      } = await supabase.from('page_layouts').select('*').eq('user_id', budgetData?.user_id).maybeSingle();
-      if (layoutsError && layoutsError.code !== 'PGRST116') throw layoutsError;
+      } = await supabase.from('page_layouts').select('*').eq('user_id', budgetData?.user_id).single();
+      if (layoutsError) throw layoutsError;
       setPageLayouts(layoutsData);
     } catch (error) {
       console.error('Error fetching proposal data:', error);
@@ -253,7 +253,7 @@ const ProposalPage: React.FC = () => {
           <section className="min-h-screen bg-white text-black p-8 print:page-break-after-always">
             <div className="max-w-4xl mx-auto">
               <header className="mb-8 text-center">
-                <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
+                <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold">{environment.name}</h1>
               </header>
 
@@ -322,7 +322,7 @@ const ProposalPage: React.FC = () => {
             <div className="bg-blue-50 p-6 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-blue-900 mb-3">🛡️ Garantia</h2>
               <p className="text-blue-800">
-                 {pageLayouts?.warranty_text || "Garantia de 1 ano para equipamentos e serviços executados pela Cubo Casa Inteligente, " + "conforme termos e condições estabelecidos em contrato."}
+                {pageLayouts?.warranty_text || "Garantia de 1 ano para equipamentos e serviços executados pela Cubo Automação, " + "conforme termos e condições estabelecidos em contrato."}
               </p>
             </div>
 
@@ -400,7 +400,7 @@ const ProposalPage: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">📞 Contato</h2>
               <div className="text-sm text-left space-y-1">
-                <p><strong>Cubo Casa Inteligente</strong></p>
+                <p><strong>Cubo Automação</strong></p>
                 <p>📧 contato@cubocasainteligente.com.br</p>
                 <p>📱 (44) 98407-1331</p>
                 <p>🌐 www.cubocasainteligente.com.br</p>
@@ -413,7 +413,7 @@ const ProposalPage: React.FC = () => {
               {pageLayouts?.closing_text || "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
             </p>
             <p className="text-sm opacity-75 mt-4">
-              Umuarama - PR, {formatDate(new Date().toISOString())}
+              São Paulo, {formatDate(new Date().toISOString())}
             </p>
           </div>
         </div>
