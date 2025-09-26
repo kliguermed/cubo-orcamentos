@@ -430,7 +430,7 @@ const ProposalPage: React.FC = () => {
           />
           
           <div className="bg-white/10 backdrop-blur-sm p-8 rounded-lg mb-8">
-            <h1 className="text-2xl font-bold mb-6">Discriminação por Ambiente</h1>
+            <h1 className="text-2xl font-bold mb-6">Detalhamento por Ambiente</h1>
             
             <div className="space-y-4 text-sm mb-6">
               {environments.map((env) => (
