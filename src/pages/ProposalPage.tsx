@@ -111,8 +111,8 @@ const ProposalPage: React.FC = () => {
       const {
         data: layoutsData,
         error: layoutsError
-      } = await supabase.from('page_layouts').select('*').eq('user_id', budgetData?.user_id).single();
-      if (layoutsError) throw layoutsError;
+      } = await supabase.from('page_layouts').select('*').eq('user_id', budgetData?.user_id).maybeSingle();
+      if (layoutsError && layoutsError.code !== 'PGRST116') throw layoutsError;
       setPageLayouts(layoutsData);
     } catch (error) {
       console.error('Error fetching proposal data:', error);
@@ -322,7 +322,7 @@ const ProposalPage: React.FC = () => {
             <div className="bg-blue-50 p-6 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-blue-900 mb-3">🛡️ Garantia</h2>
               <p className="text-blue-800">
-                {pageLayouts?.warranty_text || "Garantia de 1 ano para equipamentos e serviços executados pela Cubo Automação, " + "conforme termos e condições estabelecidos em contrato."}
+                 {pageLayouts?.warranty_text || "Garantia de 1 ano para equipamentos e serviços executados pela Cubo Casa Inteligente, " + "conforme termos e condições estabelecidos em contrato."}
               </p>
             </div>
 
@@ -400,7 +400,7 @@ const ProposalPage: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">📞 Contato</h2>
               <div className="text-sm text-left space-y-1">
-                <p><strong>Cubo Automação</strong></p>
+                <p><strong>Cubo Casa Inteligente</strong></p>
                 <p>📧 contato@cubocasainteligente.com.br</p>
                 <p>📱 (44) 98407-1331</p>
                 <p>🌐 www.cubocasainteligente.com.br</p>
@@ -413,7 +413,7 @@ const ProposalPage: React.FC = () => {
               {pageLayouts?.closing_text || "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
             </p>
             <p className="text-sm opacity-75 mt-4">
-              São Paulo, {formatDate(new Date().toISOString())}
+              Umuarama - PR, {formatDate(new Date().toISOString())}
             </p>
           </div>
         </div>
