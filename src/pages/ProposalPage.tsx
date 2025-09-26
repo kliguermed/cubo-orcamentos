@@ -253,7 +253,7 @@ const ProposalPage: React.FC = () => {
           <section className="min-h-screen bg-white text-black p-8 print:page-break-after-always">
             <div className="max-w-4xl mx-auto">
               <header className="mb-8 text-center">
-                <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
+                <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold">{environment.name}</h1>
               </header>
 
@@ -314,7 +314,7 @@ const ProposalPage: React.FC = () => {
     }}>
         <div className="max-w-4xl mx-auto">
           <header className="text-center mb-8">
-            <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
+            <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
             <h1 className="text-2xl font-bold">Garantia e Observações</h1>
           </header>
 
