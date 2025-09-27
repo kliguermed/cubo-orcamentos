@@ -60,6 +60,7 @@ const BudgetEditor = () => {
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [globalSummaryOpen, setGlobalSummaryOpen] = useState(false);
+  const [allEnvironmentItems, setAllEnvironmentItems] = useState<{ [envId: string]: Item[] }>({});
   useEffect(() => {
     if (id) {
       fetchBudgetData();
@@ -75,8 +76,33 @@ const BudgetEditor = () => {
   useEffect(() => {
     if (environments.length > 0 && settings) {
       updateBudgetTotalAmount();
+      fetchAllEnvironmentItems();
     }
   }, [environments.length, settings]);
+
+  // Fetch items for all environments to show totals correctly
+  const fetchAllEnvironmentItems = async () => {
+    if (environments.length === 0) return;
+    
+    try {
+      const { data: allItems, error } = await supabase
+        .from("items")
+        .select("*")
+        .in("environment_id", environments.map(env => env.id));
+      
+      if (error) throw error;
+      
+      // Group items by environment_id
+      const itemsByEnv: { [envId: string]: Item[] } = {};
+      environments.forEach(env => {
+        itemsByEnv[env.id] = (allItems || []).filter(item => item.environment_id === env.id);
+      });
+      
+      setAllEnvironmentItems(itemsByEnv);
+    } catch (error: any) {
+      console.error("Erro ao buscar itens dos ambientes:", error);
+    }
+  };
   const fetchBudgetData = async () => {
     try {
       const {
@@ -197,9 +223,20 @@ const BudgetEditor = () => {
   };
 
   // Calculate environment totals for any environment (not just selected)
-  const getEnvironmentFinalTotal = (envId: string, envItems: Item[]) => {
+  const getEnvironmentFinalTotal = (envId: string, allEnvItems?: Item[]) => {
     if (!settings) return 0;
-    const environmentItems = envItems.filter(item => item.environment_id === envId);
+    
+    // Use passed items or get from state
+    let environmentItems: Item[];
+    if (allEnvItems) {
+      environmentItems = allEnvItems.filter(item => item.environment_id === envId);
+    } else if (envId === selectedEnvId) {
+      // For selected environment, use current items
+      environmentItems = items;
+    } else {
+      // For other environments, use cached items
+      environmentItems = allEnvironmentItems[envId] || [];
+    }
 
     // Calculate items total from individual item subtotals
     const itemsTotal = environmentItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
@@ -292,8 +329,9 @@ const BudgetEditor = () => {
         ...updateData
       } : item));
 
-      // Update environment subtotal
+      // Update environment subtotal and refresh all environment items
       await updateEnvironmentSubtotal();
+      await fetchAllEnvironmentItems();
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar item",
@@ -310,6 +348,7 @@ const BudgetEditor = () => {
       if (error) throw error;
       setItems(prev => prev.filter(item => item.id !== itemId));
       await updateEnvironmentSubtotal();
+      await fetchAllEnvironmentItems();
       toast({
         title: "Item removido",
         description: "Item foi removido com sucesso"
@@ -481,6 +520,7 @@ const BudgetEditor = () => {
         });
       }
       await updateEnvironmentSubtotal();
+      await fetchAllEnvironmentItems();
       setEditingItem(null);
     } catch (error: any) {
       toast({
@@ -687,9 +727,9 @@ const BudgetEditor = () => {
                        <div className="flex justify-between items-center">
                           <div>
                             <div className="font-medium">{env.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {formatCurrency(getEnvironmentFinalTotal(env.id, items))}
-                            </div>
+                             <div className="text-sm text-muted-foreground">
+                               {formatCurrency(getEnvironmentFinalTotal(env.id))}
+                             </div>
                           </div>
                          <Button variant="ghost" size="sm" onClick={e => {
                       e.stopPropagation();

@@ -142,9 +142,10 @@ const ProposalPage: React.FC = () => {
   const calculateEnvironmentRT = (env: Environment): number => {
     if (!settings) return 0;
     if (settings.rt_distribution === 'diluted') {
-      const totalItems = env.subtotal;
+      // Calculate dynamic subtotal from items instead of using stored subtotal
+      const dynamicSubtotal = env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0);
       if (settings.rt_type === 'percentage') {
-        return totalItems * (settings.rt_value / 100);
+        return dynamicSubtotal * (settings.rt_value / 100);
       }
       return settings.rt_value;
     }
@@ -160,7 +161,9 @@ const ProposalPage: React.FC = () => {
     return purchaseTotal + laborTotal + rtTotal;
   };
   const calculateEnvironmentProfitTotal = (env: Environment): number => {
-    const finalTotal = env.subtotal + calculateEnvironmentLabor(env) + calculateEnvironmentRT(env);
+    // Calculate dynamic subtotal from items instead of using stored subtotal
+    const dynamicSubtotal = env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0);
+    const finalTotal = dynamicSubtotal + calculateEnvironmentLabor(env) + calculateEnvironmentRT(env);
     const costTotal = calculateEnvironmentCostTotal(env);
     return finalTotal - costTotal;
   };
@@ -288,7 +291,7 @@ const ProposalPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal dos Itens:</span>
-                    <span className="font-medium">{formatCurrency(environment.subtotal)}</span>
+                    <span className="font-medium">{formatCurrency(environment.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0))}</span>
                   </div>
                   {settings && <div className="flex justify-between">
                       <span>Mão de Obra:</span>
@@ -298,7 +301,7 @@ const ProposalPage: React.FC = () => {
                     <div className="flex justify-between text-lg font-bold">
                       <span>Subtotal do Ambiente:</span>
                       <span>
-                        {formatCurrency(environment.subtotal + calculateEnvironmentLabor(environment))}
+                        {formatCurrency(environment.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(environment))}
                       </span>
                     </div>
                   </div>
@@ -365,7 +368,7 @@ const ProposalPage: React.FC = () => {
                   <div className="space-y-1 text-left">
                     <div className="flex justify-between">
                       <span>Itens:</span>
-                      <span>{formatCurrency(env.subtotal)}</span>
+                      <span>{formatCurrency(env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Mão de obra:</span>
@@ -373,7 +376,7 @@ const ProposalPage: React.FC = () => {
                     </div>
                     <div className="flex justify-between font-semibold border-t pt-1">
                       <span>Subtotal:</span>
-                      <span>{formatCurrency(env.subtotal + calculateEnvironmentLabor(env))}</span>
+                      <span>{formatCurrency(env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env))}</span>
                     </div>
                   </div>
                 </div>)}
@@ -383,7 +386,7 @@ const ProposalPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <span className="text-xl font-bold">Total do Projeto:</span>
                 <span className="text-3xl font-bold text-green-400">
-                  {formatCurrency(environments.reduce((sum, env) => sum + env.subtotal + calculateEnvironmentLabor(env), 0))}
+                  {formatCurrency(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0))}
                 </span>
               </div>
             </div>
