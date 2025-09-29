@@ -492,15 +492,18 @@ const BudgetEditor = () => {
   };
   const saveItem = async (itemData: Omit<Item, 'id'>) => {
     try {
+      // Remove subtotal from itemData as it's a generated column
+      const { subtotal, ...dataToSave } = itemData as any;
+      
       if (editingItem) {
         // Update existing item
         const {
           error
-        } = await supabase.from("items").update(itemData).eq("id", editingItem.id);
+        } = await supabase.from("items").update(dataToSave).eq("id", editingItem.id);
         if (error) throw error;
         setItems(prev => prev.map(item => item.id === editingItem.id ? {
           ...item,
-          ...itemData
+          ...dataToSave
         } : item));
         toast({
           title: "Item atualizado",
@@ -511,7 +514,7 @@ const BudgetEditor = () => {
         const {
           data,
           error
-        } = await supabase.from("items").insert([itemData]).select().single();
+        } = await supabase.from("items").insert([dataToSave]).select().single();
         if (error) throw error;
         setItems(prev => [...prev, data]);
         toast({
