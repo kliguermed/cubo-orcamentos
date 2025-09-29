@@ -12,6 +12,13 @@ interface Budget {
   client_cpf_cnpj: string;
   created_at: string;
   total_amount: number;
+  // Calculation rules specific to this budget
+  markup_percentage: number;
+  rt_type: string;
+  rt_value: number;
+  rt_distribution: string;
+  labor_type: string;
+  labor_value: number;
 }
 interface Item {
   id: string;
@@ -60,7 +67,6 @@ const ProposalPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
-  const [settings, setSettings] = useState<Settings | null>(null);
   const [pageLayouts, setPageLayouts] = useState<PageLayouts | null>(null);
   useEffect(() => {
     if (id) {
@@ -99,14 +105,6 @@ const ProposalPage: React.FC = () => {
       if (environmentsError) throw environmentsError;
       setEnvironments(environmentsData || []);
 
-      // Fetch settings
-      const {
-        data: settingsData,
-        error: settingsError
-      } = await supabase.from('settings').select('*').eq('user_id', budgetData?.user_id).single();
-      if (settingsError) throw settingsError;
-      setSettings(settingsData);
-
       // Fetch page layouts
       const {
         data: layoutsData,
@@ -135,19 +133,19 @@ const ProposalPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
   const calculateEnvironmentLabor = (env: Environment): number => {
-    if (!settings) return 0;
+    if (!budget) return 0;
     const totalQuantity = env.items.reduce((sum, item) => sum + item.quantity, 0);
-    return settings.labor_value * totalQuantity;
+    return budget.labor_value * totalQuantity;
   };
   const calculateEnvironmentRT = (env: Environment): number => {
-    if (!settings) return 0;
-    if (settings.rt_distribution === 'diluted') {
+    if (!budget) return 0;
+    if (budget.rt_distribution === 'diluted') {
       // Calculate dynamic subtotal from items instead of using stored subtotal
       const dynamicSubtotal = env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0);
-      if (settings.rt_type === 'percentage') {
-        return dynamicSubtotal * (settings.rt_value / 100);
+      if (budget.rt_type === 'percentage') {
+        return dynamicSubtotal * (budget.rt_value / 100);
       }
-      return settings.rt_value;
+      return budget.rt_value;
     }
     return 0;
   };
@@ -293,7 +291,7 @@ const ProposalPage: React.FC = () => {
                     <span>Subtotal dos Itens:</span>
                     <span className="font-medium">{formatCurrency(environment.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0))}</span>
                   </div>
-                  {settings && <div className="flex justify-between">
+                  {budget && <div className="flex justify-between">
                       <span>Mão de Obra:</span>
                       <span className="font-medium">{formatCurrency(calculateEnvironmentLabor(environment))}</span>
                     </div>}
@@ -396,7 +394,7 @@ const ProposalPage: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">💳 Formas de Pagamento</h2>
               <div className="text-sm text-left space-y-2">
-                {(pageLayouts?.payment_methods || settings?.payment_terms || "Pagamento à vista com desconto de 5%. Parcelamento em até 12x no cartão.").split('.').map((line, index) => line.trim() && <p key={index}>• {line.trim()}</p>)}
+                {(pageLayouts?.payment_methods || "Pagamento à vista com desconto de 5%. Parcelamento em até 12x no cartão.").split('.').map((line, index) => line.trim() && <p key={index}>• {line.trim()}</p>)}
               </div>
             </div>
 

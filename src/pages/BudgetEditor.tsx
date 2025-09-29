@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,13 @@ interface Budget {
   client_email: string;
   status: "editing" | "finished";
   total_amount: number;
+  // Calculation rules specific to this budget
+  markup_percentage: number;
+  rt_type: string;
+  rt_value: number;
+  rt_distribution: string;
+  labor_type: string;
+  labor_value: number;
 }
 interface Environment {
   id: string;
@@ -54,13 +61,14 @@ const BudgetEditor = () => {
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
-  const [settings, setSettings] = useState<any>(null);
   const [environmentModalOpen, setEnvironmentModalOpen] = useState(false);
   const [editingEnvironment, setEditingEnvironment] = useState<Environment | null>(null);
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [globalSummaryOpen, setGlobalSummaryOpen] = useState(false);
   const [allEnvironmentItems, setAllEnvironmentItems] = useState<{ [envId: string]: Item[] }>({});
+  const [clientDataExpanded, setClientDataExpanded] = useState(false);
+  const [calculationRulesExpanded, setCalculationRulesExpanded] = useState(false);
   useEffect(() => {
     if (id) {
       fetchBudgetData();
@@ -72,13 +80,13 @@ const BudgetEditor = () => {
     }
   }, [selectedEnvId]);
 
-  // Update budget total when environments or settings change
+  // Update budget total when environments or budget rules change
   useEffect(() => {
-    if (environments.length > 0 && settings) {
+    if (environments.length > 0 && budget) {
       updateBudgetTotalAmount();
       fetchAllEnvironmentItems();
     }
-  }, [environments.length, settings]);
+  }, [environments.length, budget?.markup_percentage, budget?.rt_value, budget?.labor_value]);
 
   // Fetch items for all environments to show totals correctly
   const fetchAllEnvironmentItems = async () => {
@@ -105,24 +113,16 @@ const BudgetEditor = () => {
   };
   const fetchBudgetData = async () => {
     try {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      const [budgetRes, envRes, settingsRes] = await Promise.all([supabase.from("budgets").select("*").eq("id", id).single(), supabase.from("environments").select("*").eq("budget_id", id), supabase.from("settings").select("*").eq("user_id", user?.id).maybeSingle()]);
+      const [budgetRes, envRes] = await Promise.all([
+        supabase.from("budgets").select("*").eq("id", id).single(), 
+        supabase.from("environments").select("*").eq("budget_id", id)
+      ]);
+      
       if (budgetRes.error) throw budgetRes.error;
-      if (settingsRes.error) throw settingsRes.error;
+      
       setBudget(budgetRes.data as Budget);
       setEnvironments(envRes.data || []);
-      setSettings(settingsRes.data || {
-        labor_type: "percentage",
-        labor_value: 0,
-        rt_type: "percentage",
-        rt_value: 0,
-        markup_percentage: 0,
-        rt_distribution: "diluted"
-      });
+      
       if (envRes.data && envRes.data.length > 0) {
         setSelectedEnvId(envRes.data[0].id);
       }
@@ -204,27 +204,27 @@ const BudgetEditor = () => {
     }
   };
   const calculateSalePrice = (purchasePrice: number, quantity: number = 1) => {
-    if (!settings) return purchasePrice;
+    if (!budget) return purchasePrice;
     let salePrice = purchasePrice;
 
     // Apply markup
-    if (settings.markup_percentage > 0) {
-      salePrice = salePrice * (1 + settings.markup_percentage / 100);
+    if (budget.markup_percentage > 0) {
+      salePrice = salePrice * (1 + budget.markup_percentage / 100);
     }
 
     // Apply RT (if percentage and diluted)
-    if (settings.rt_type === "percentage" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
-      salePrice = salePrice * (1 + settings.rt_value / 100);
-    } else if (settings.rt_type === "fixed" && settings.rt_distribution === "diluted" && settings.rt_value > 0) {
+    if (budget.rt_type === "percentage" && budget.rt_distribution === "diluted" && budget.rt_value > 0) {
+      salePrice = salePrice * (1 + budget.rt_value / 100);
+    } else if (budget.rt_type === "fixed" && budget.rt_distribution === "diluted" && budget.rt_value > 0) {
       // Add fixed RT value divided by quantity
-      salePrice = salePrice + settings.rt_value / quantity;
+      salePrice = salePrice + budget.rt_value / quantity;
     }
     return salePrice;
   };
 
   // Calculate environment totals for any environment (not just selected)
   const getEnvironmentFinalTotal = (envId: string, allEnvItems?: Item[]) => {
-    if (!settings) return 0;
+    if (!budget) return 0;
     
     // Use passed items or get from state
     let environmentItems: Item[];
@@ -243,7 +243,7 @@ const BudgetEditor = () => {
 
     // Labor: fixed value per unit (quantity)
     const totalQuantity = environmentItems.reduce((sum, item) => sum + item.quantity, 0);
-    const laborTotal = settings.labor_value * totalQuantity;
+    const laborTotal = budget.labor_value * totalQuantity;
     
     // Return final total (items + labor)
     return itemsTotal + laborTotal;
@@ -251,7 +251,7 @@ const BudgetEditor = () => {
 
   // Calculate environment totals for selected environment
   const calculateEnvironmentTotals = () => {
-    if (!selectedEnvId || !settings) return {
+    if (!selectedEnvId || !budget) return {
       itemsTotal: 0,
       laborTotal: 0,
       rtTotal: 0,
@@ -268,7 +268,7 @@ const BudgetEditor = () => {
 
     // Labor: fixed value per unit (quantity)
     const totalQuantity = environmentItems.reduce((sum, item) => sum + item.quantity, 0);
-    const laborTotal = settings.labor_value * totalQuantity;
+    const laborTotal = budget.labor_value * totalQuantity;
 
     // RT: calculate total RT applied to all items
     let rtTotal = 0;
@@ -277,15 +277,15 @@ const BudgetEditor = () => {
       let saleWithMarkup = purchaseValue;
 
       // Apply markup first
-      if (settings.markup_percentage > 0) {
-        saleWithMarkup = saleWithMarkup * (1 + settings.markup_percentage / 100);
+      if (budget.markup_percentage > 0) {
+        saleWithMarkup = saleWithMarkup * (1 + budget.markup_percentage / 100);
       }
 
       // Calculate RT portion
-      if (settings.rt_type === "percentage" && settings.rt_value > 0) {
-        rtTotal += saleWithMarkup * (settings.rt_value / 100);
-      } else if (settings.rt_type === "fixed" && settings.rt_value > 0) {
-        rtTotal += settings.rt_value;
+      if (budget.rt_type === "percentage" && budget.rt_value > 0) {
+        rtTotal += saleWithMarkup * (budget.rt_value / 100);
+      } else if (budget.rt_type === "fixed" && budget.rt_value > 0) {
+        rtTotal += budget.rt_value;
       }
     });
     const finalTotal = itemsTotal + laborTotal;
@@ -386,7 +386,7 @@ const BudgetEditor = () => {
     }
   };
   const updateBudgetTotalAmount = async () => {
-    if (!id || !settings) return;
+    if (!id || !budget) return;
     try {
       // Get all items from all environments
       const {
@@ -436,6 +436,43 @@ const BudgetEditor = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveBudgetCalculationRules = async () => {
+    if (!budget) return;
+    try {
+      const {
+        error
+      } = await supabase.from("budgets").update({
+        markup_percentage: budget.markup_percentage,
+        rt_type: budget.rt_type,
+        rt_value: budget.rt_value,
+        rt_distribution: budget.rt_distribution,
+        labor_type: budget.labor_type,
+        labor_value: budget.labor_value
+      }).eq("id", id);
+      if (error) throw error;
+      
+      toast({
+        title: "Regras atualizadas",
+        description: "As regras de cálculo foram salvas com sucesso"
+      });
+      
+      // Recalculate all totals and refresh items
+      await updateBudgetTotalAmount();
+      await fetchAllEnvironmentItems();
+      
+      // Refresh selected environment items to reflect new calculations
+      if (selectedEnvId) {
+        await fetchItems(selectedEnvId);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar regras",
         description: error.message,
         variant: "destructive"
       });
@@ -550,7 +587,7 @@ const BudgetEditor = () => {
 
   // Calculate global project totals
   const calculateGlobalTotals = async () => {
-    if (!settings) return {
+    if (!budget) return {
       purchaseTotal: 0,
       laborTotal: 0,
       rtTotal: 0,
@@ -582,7 +619,7 @@ const BudgetEditor = () => {
 
         // Labor total
         const envTotalQuantity = envItems.reduce((sum, item) => sum + item.quantity, 0);
-        const envLaborTotal = settings.labor_value * envTotalQuantity;
+        const envLaborTotal = budget.labor_value * envTotalQuantity;
         globalLaborTotal += envLaborTotal;
 
         // RT total
@@ -590,13 +627,13 @@ const BudgetEditor = () => {
         envItems.forEach(item => {
           const purchaseValue = item.purchase_price * item.quantity;
           let saleWithMarkup = purchaseValue;
-          if (settings.markup_percentage > 0) {
-            saleWithMarkup = saleWithMarkup * (1 + settings.markup_percentage / 100);
+          if (budget.markup_percentage > 0) {
+            saleWithMarkup = saleWithMarkup * (1 + budget.markup_percentage / 100);
           }
-          if (settings.rt_type === "percentage" && settings.rt_value > 0) {
-            envRtTotal += saleWithMarkup * (settings.rt_value / 100);
-          } else if (settings.rt_type === "fixed" && settings.rt_value > 0) {
-            envRtTotal += settings.rt_value;
+          if (budget.rt_type === "percentage" && budget.rt_value > 0) {
+            envRtTotal += saleWithMarkup * (budget.rt_value / 100);
+          } else if (budget.rt_type === "fixed" && budget.rt_value > 0) {
+            envRtTotal += budget.rt_value;
           }
         });
         globalRtTotal += envRtTotal;
@@ -669,54 +706,114 @@ const BudgetEditor = () => {
           <div className={isMobile ? "space-y-4" : "lg:col-span-1 space-y-6"}>
             {/* Client Info */}
             <Card>
-              <CardHeader>
-                <CardTitle>Dados do Cliente</CardTitle>
+              <CardHeader className="cursor-pointer" onClick={() => setClientDataExpanded(!clientDataExpanded)}>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Dados do Cliente</CardTitle>
+                  <Button variant="ghost" size="sm">
+                    {clientDataExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                 <div>
-                   <Label htmlFor="client-name">Nome completo</Label>
-                   <Input id="client-name" value={budget.client_name} onChange={e => setBudget(prev => prev ? {
-                  ...prev,
-                  client_name: e.target.value
-                } : null)} onFocus={e => {
-                  if (e.target.value === "Nome do cliente") {
-                    setBudget(prev => prev ? {
+              {clientDataExpanded && (
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="client-name">Nome completo</Label>
+                    <Input id="client-name" value={budget.client_name} onChange={e => setBudget(prev => prev ? {
                       ...prev,
-                      client_name: ""
-                    } : null);
-                  }
-                  e.target.select();
-                }} placeholder="Digite o nome do cliente" />
-                 </div>
-                <div>
-                  <Label htmlFor="client-cpf">CPF/CNPJ</Label>
-                  <Input id="client-cpf" value={budget.client_cpf_cnpj || ""} onChange={e => setBudget(prev => prev ? {
-                  ...prev,
-                  client_cpf_cnpj: e.target.value
-                } : null)} />
-                </div>
-                <div>
-                  <Label htmlFor="client-phone">Telefone</Label>
-                  <Input id="client-phone" value={budget.client_phone || ""} onChange={e => setBudget(prev => prev ? {
-                  ...prev,
-                  client_phone: e.target.value
-                } : null)} />
-                </div>
-                <div>
-                  <Label htmlFor="client-email">E-mail</Label>
-                  <Input id="client-email" type="email" value={budget.client_email || ""} onChange={e => setBudget(prev => prev ? {
-                  ...prev,
-                  client_email: e.target.value
-                } : null)} />
-                 </div>
+                      client_name: e.target.value
+                    } : null)} onFocus={e => {
+                      if (e.target.value === "Nome do cliente") {
+                        setBudget(prev => prev ? {
+                          ...prev,
+                          client_name: ""
+                        } : null);
+                      }
+                      e.target.select();
+                    }} placeholder="Digite o nome do cliente" />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-cpf">CPF/CNPJ</Label>
+                    <Input id="client-cpf" value={budget.client_cpf_cnpj || ""} onChange={e => setBudget(prev => prev ? {
+                      ...prev,
+                      client_cpf_cnpj: e.target.value
+                    } : null)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-phone">Telefone</Label>
+                    <Input id="client-phone" value={budget.client_phone || ""} onChange={e => setBudget(prev => prev ? {
+                      ...prev,
+                      client_phone: e.target.value
+                    } : null)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-email">E-mail</Label>
+                    <Input id="client-email" type="email" value={budget.client_email || ""} onChange={e => setBudget(prev => prev ? {
+                      ...prev,
+                      client_email: e.target.value
+                    } : null)} />
+                  </div>
                   <div className="pt-4">
                     <Button onClick={saveBudgetClient} className="w-full" size={isMobile ? "sm" : "default"}>
                       <Save className="h-4 w-4 mr-2" />
                       {isMobile ? "Salvar" : "Salvar dados do cliente"}
                     </Button>
                   </div>
-               </CardContent>
-             </Card>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* Calculation Rules */}
+            <Card>
+              <CardHeader className="cursor-pointer" onClick={() => setCalculationRulesExpanded(!calculationRulesExpanded)}>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Regras de Cálculo</CardTitle>
+                  <Button variant="ghost" size="sm">
+                    {calculationRulesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <CardDescription>Regras específicas deste orçamento</CardDescription>
+              </CardHeader>
+              {calculationRulesExpanded && (
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="markup">Markup (%)</Label>
+                    <Input 
+                      id="markup"
+                      type="number" 
+                      value={budget.markup_percentage} 
+                      onChange={e => setBudget(prev => prev ? {...prev, markup_percentage: Number(e.target.value)} : null)} 
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="rt-value">RT - Valor {budget.rt_type === 'percentage' ? '(%)' : '(R$)'}</Label>
+                    <Input 
+                      id="rt-value"
+                      type="number" 
+                      value={budget.rt_value} 
+                      onChange={e => setBudget(prev => prev ? {...prev, rt_value: Number(e.target.value)} : null)} 
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="labor-value">Mão de Obra - Valor (R$ por unidade)</Label>
+                    <Input 
+                      id="labor-value"
+                      type="number" 
+                      value={budget.labor_value} 
+                      onChange={e => setBudget(prev => prev ? {...prev, labor_value: Number(e.target.value)} : null)} 
+                    />
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button onClick={saveBudgetCalculationRules} className="w-full" size={isMobile ? "sm" : "default"}>
+                      <Save className="h-4 w-4 mr-2" />
+                      {isMobile ? "Salvar" : "Salvar regras de cálculo"}
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
 
             {/* Environments */}
             <Card>
@@ -958,7 +1055,7 @@ const BudgetEditor = () => {
       {/* Modals */}
       <EnvironmentModal environment={editingEnvironment} open={environmentModalOpen} onOpenChange={setEnvironmentModalOpen} onSave={saveEnvironment} onDelete={deleteEnvironment} />
       
-      <ItemModal item={editingItem} open={itemModalOpen} onOpenChange={setItemModalOpen} onSave={saveItem} environmentId={selectedEnvId || ""} settings={settings} />
+      <ItemModal item={editingItem} open={itemModalOpen} onOpenChange={setItemModalOpen} onSave={saveItem} environmentId={selectedEnvId || ""} settings={budget} />
 
       <GlobalSummaryModal open={globalSummaryOpen} onOpenChange={setGlobalSummaryOpen} calculateGlobalTotals={calculateGlobalTotals} />
     </div>;

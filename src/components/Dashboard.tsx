@@ -50,12 +50,26 @@ const Dashboard = () => {
 
   const handleCreateBudget = async () => {
     try {
+      // Fetch user's current settings to use as default for new budget
+      const { data: settingsData } = await supabase
+        .from("settings")
+        .select("*")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+
       const { data, error } = await supabase
         .from("budgets")
         .insert([
           {
             client_name: "Novo Cliente",
-            user_id: user?.id
+            user_id: user?.id,
+            // Copy calculation rules from settings to budget
+            markup_percentage: settingsData?.markup_percentage || 0,
+            rt_type: settingsData?.rt_type || 'percentage',
+            rt_value: settingsData?.rt_value || 0,
+            rt_distribution: settingsData?.rt_distribution || 'diluted',
+            labor_type: settingsData?.labor_type || 'percentage',
+            labor_value: settingsData?.labor_value || 0
           }
         ])
         .select()

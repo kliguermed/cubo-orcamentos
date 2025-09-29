@@ -22,7 +22,13 @@ export type Database = {
           client_phone: string | null
           created_at: string
           id: string
+          labor_type: string | null
+          labor_value: number | null
+          markup_percentage: number | null
           protocol_number: number
+          rt_distribution: string | null
+          rt_type: string | null
+          rt_value: number | null
           status: string
           total_amount: number | null
           updated_at: string
@@ -35,7 +41,13 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           id?: string
+          labor_type?: string | null
+          labor_value?: number | null
+          markup_percentage?: number | null
           protocol_number?: number
+          rt_distribution?: string | null
+          rt_type?: string | null
+          rt_value?: number | null
           status?: string
           total_amount?: number | null
           updated_at?: string
@@ -48,7 +60,13 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           id?: string
+          labor_type?: string | null
+          labor_value?: number | null
+          markup_percentage?: number | null
           protocol_number?: number
+          rt_distribution?: string | null
+          rt_type?: string | null
+          rt_value?: number | null
           status?: string
           total_amount?: number | null
           updated_at?: string
