@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,7 @@ export const ItemModal = ({
   const [purchasePrice, setPurchasePrice] = useState(item?.purchase_price || 0);
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile();
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const calculateSalePrice = () => {
     if (!settings) return purchasePrice;
@@ -69,7 +70,7 @@ export const ItemModal = ({
     return quantity * calculateSalePrice();
   };
 
-  const handleSave = async () => {
+  const handleSave = async (continueAdding: boolean = false) => {
     if (!name.trim()) return;
 
     setSaving(true);
@@ -81,8 +82,17 @@ export const ItemModal = ({
         purchase_price: purchasePrice,
         sale_price: calculateSalePrice(),
       });
-      onOpenChange(false);
-      resetForm();
+      
+      if (continueAdding) {
+        resetForm();
+        // Focus on name input after reset
+        setTimeout(() => {
+          nameInputRef.current?.focus();
+        }, 0);
+      } else {
+        onOpenChange(false);
+        resetForm();
+      }
     } finally {
       setSaving(false);
     }
@@ -127,6 +137,7 @@ export const ItemModal = ({
           <div>
             <Label htmlFor="item-name">Nome do item *</Label>
             <Input
+              ref={nameInputRef}
               id="item-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -187,20 +198,27 @@ export const ItemModal = ({
           </div>
         </div>
 
-        <DialogFooter className={isMobile ? "flex-col gap-2" : ""}>
+        <DialogFooter className={isMobile ? "flex-col gap-2" : "gap-2"}>
+          <Button 
+            onClick={() => handleSave(true)}
+            disabled={!isValid || saving}
+            className={isMobile ? "w-full" : ""}
+          >
+            {saving ? "Salvando..." : "Salvar/Continuar"}
+          </Button>
+          <Button 
+            onClick={() => handleSave(false)}
+            disabled={!isValid || saving}
+            className={isMobile ? "w-full" : ""}
+          >
+            {saving ? "Salvando..." : "Salvar"}
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
             className={isMobile ? "w-full" : ""}
           >
             Cancelar
-          </Button>
-          <Button 
-            onClick={handleSave}
-            disabled={!isValid || saving}
-            className={isMobile ? "w-full" : ""}
-          >
-            {saving ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -781,7 +781,8 @@ const BudgetEditor = () => {
                       id="markup"
                       type="number" 
                       value={budget.markup_percentage} 
-                      onChange={e => setBudget(prev => prev ? {...prev, markup_percentage: Number(e.target.value)} : null)} 
+                      onChange={e => setBudget(prev => prev ? {...prev, markup_percentage: Number(e.target.value)} : null)}
+                      onFocus={e => e.target.select()}
                     />
                   </div>
                   
@@ -791,7 +792,8 @@ const BudgetEditor = () => {
                       id="rt-value"
                       type="number" 
                       value={budget.rt_value} 
-                      onChange={e => setBudget(prev => prev ? {...prev, rt_value: Number(e.target.value)} : null)} 
+                      onChange={e => setBudget(prev => prev ? {...prev, rt_value: Number(e.target.value)} : null)}
+                      onFocus={e => e.target.select()}
                     />
                   </div>
                   
@@ -801,7 +803,8 @@ const BudgetEditor = () => {
                       id="labor-value"
                       type="number" 
                       value={budget.labor_value} 
-                      onChange={e => setBudget(prev => prev ? {...prev, labor_value: Number(e.target.value)} : null)} 
+                      onChange={e => setBudget(prev => prev ? {...prev, labor_value: Number(e.target.value)} : null)}
+                      onFocus={e => e.target.select()}
                     />
                   </div>
                   
