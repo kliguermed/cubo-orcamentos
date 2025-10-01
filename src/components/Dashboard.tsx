@@ -63,13 +63,13 @@ const Dashboard = () => {
           {
             client_name: "Novo Cliente",
             user_id: user?.id,
-            // Copy calculation rules from settings to budget
-            markup_percentage: settingsData?.markup_percentage || 0,
-            rt_type: settingsData?.rt_type || 'percentage',
-            rt_value: settingsData?.rt_value || 0,
-            rt_distribution: settingsData?.rt_distribution || 'diluted',
-            labor_type: settingsData?.labor_type || 'percentage',
-            labor_value: settingsData?.labor_value || 0
+            // Use fixed default values for calculation rules
+            markup_percentage: 60,
+            rt_type: 'percentage',
+            rt_value: 5,
+            rt_distribution: 'diluted',
+            labor_type: 'percentage',
+            labor_value: 200
           }
         ])
         .select()

@@ -442,34 +442,95 @@ const BudgetEditor = () => {
     }
   };
 
+  const recalculateAllItems = async () => {
+    if (!budget) return;
+    
+    try {
+      // Get all items from all environments
+      const { data: allItems, error: itemsError } = await supabase
+        .from("items")
+        .select("*")
+        .in("environment_id", environments.map(env => env.id));
+      
+      if (itemsError) throw itemsError;
+      if (!allItems || allItems.length === 0) return;
+      
+      // Recalculate each item with new rules
+      const updates = allItems.map(item => {
+        const newSalePrice = calculateSalePrice(item.purchase_price, item.quantity);
+        const newSubtotal = item.quantity * newSalePrice;
+        
+        return supabase
+          .from("items")
+          .update({
+            sale_price: newSalePrice,
+            subtotal: newSubtotal
+          })
+          .eq("id", item.id);
+      });
+      
+      // Execute all updates in parallel
+      await Promise.all(updates);
+      
+      // Update environment subtotals
+      for (const env of environments) {
+        const envItems = allItems.filter(item => item.environment_id === env.id);
+        const itemsSubtotal = envItems.reduce((sum, item) => {
+          const newSalePrice = calculateSalePrice(item.purchase_price, item.quantity);
+          return sum + (item.quantity * newSalePrice);
+        }, 0);
+        
+        await supabase
+          .from("environments")
+          .update({ subtotal: itemsSubtotal })
+          .eq("id", env.id);
+      }
+    } catch (error: any) {
+      console.error("Erro ao recalcular itens:", error);
+      throw error;
+    }
+  };
+
   const saveBudgetCalculationRules = async () => {
     if (!budget) return;
+    
     try {
-      const {
-        error
-      } = await supabase.from("budgets").update({
-        markup_percentage: budget.markup_percentage,
-        rt_type: budget.rt_type,
-        rt_value: budget.rt_value,
-        rt_distribution: budget.rt_distribution,
-        labor_type: budget.labor_type,
-        labor_value: budget.labor_value
-      }).eq("id", id);
+      // Save the new rules to the budget
+      const { error } = await supabase
+        .from("budgets")
+        .update({
+          markup_percentage: budget.markup_percentage,
+          rt_type: budget.rt_type,
+          rt_value: budget.rt_value,
+          rt_distribution: budget.rt_distribution,
+          labor_type: budget.labor_type,
+          labor_value: budget.labor_value
+        })
+        .eq("id", id);
+      
       if (error) throw error;
       
       toast({
-        title: "Regras atualizadas",
-        description: "As regras de cálculo foram salvas com sucesso"
+        title: "Recalculando...",
+        description: "Aplicando novas regras a todos os itens"
       });
       
-      // Recalculate all totals and refresh items
-      await updateBudgetTotalAmount();
+      // Recalculate all items with new rules
+      await recalculateAllItems();
+      
+      // Refresh all data
+      await fetchBudgetData();
       await fetchAllEnvironmentItems();
       
-      // Refresh selected environment items to reflect new calculations
+      // Refresh selected environment items
       if (selectedEnvId) {
         await fetchItems(selectedEnvId);
       }
+      
+      toast({
+        title: "Regras atualizadas",
+        description: "As regras de cálculo foram aplicadas com sucesso"
+      });
     } catch (error: any) {
       toast({
         title: "Erro ao salvar regras",
