@@ -316,18 +316,25 @@ const BudgetEditor = () => {
         updateData.sale_price = calculateSalePrice(newPurchasePrice, newQuantity);
       }
 
-      // Calculate subtotal
-      const finalQuantity = updateData.quantity || currentItem.quantity;
-      const finalSalePrice = updateData.sale_price || currentItem.sale_price;
-      updateData.subtotal = finalQuantity * finalSalePrice;
+      // DO NOT calculate subtotal manually - let the database trigger handle it
       const {
         error
       } = await supabase.from("items").update(updateData).eq("id", itemId);
       if (error) throw error;
-      setItems(prev => prev.map(item => item.id === itemId ? {
-        ...item,
-        ...updateData
-      } : item));
+
+      // Wait for database trigger to calculate subtotal
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Fetch the updated item with calculated subtotal
+      const { data: updatedItem, error: fetchError } = await supabase
+        .from("items")
+        .select("*")
+        .eq("id", itemId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      setItems(prev => prev.map(item => item.id === itemId ? updatedItem : item));
 
       // Update environment subtotal and refresh all environment items
       await updateEnvironmentSubtotal();
@@ -578,7 +585,7 @@ const BudgetEditor = () => {
   };
   const saveItem = async (itemData: Omit<Item, 'id'>) => {
     try {
-      // Remove subtotal from itemData as it's a generated column
+      // Remove subtotal from itemData as it's calculated by database trigger
       const { subtotal, ...dataToSave } = itemData as any;
       
       if (editingItem) {
@@ -587,10 +594,6 @@ const BudgetEditor = () => {
           error
         } = await supabase.from("items").update(dataToSave).eq("id", editingItem.id);
         if (error) throw error;
-        setItems(prev => prev.map(item => item.id === editingItem.id ? {
-          ...item,
-          ...dataToSave
-        } : item));
         toast({
           title: "Item atualizado",
           description: "Item foi atualizado com sucesso"
@@ -598,16 +601,19 @@ const BudgetEditor = () => {
       } else {
         // Create new item
         const {
-          data,
           error
-        } = await supabase.from("items").insert([dataToSave]).select().single();
+        } = await supabase.from("items").insert([dataToSave]).select();
         if (error) throw error;
-        setItems(prev => [...prev, data]);
         toast({
           title: "Item adicionado",
           description: "Novo item foi adicionado com sucesso"
         });
       }
+
+      // Wait for database trigger to process
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Refresh items to get calculated values
       await updateEnvironmentSubtotal();
       await fetchAllEnvironmentItems();
       setEditingItem(null);
