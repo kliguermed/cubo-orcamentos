@@ -455,16 +455,15 @@ const BudgetEditor = () => {
       if (itemsError) throw itemsError;
       if (!allItems || allItems.length === 0) return;
       
-      // Recalculate each item with new rules
+      // Recalculate each item with new rules - only update sale_price
+      // The subtotal is calculated automatically by the database
       const updates = allItems.map(item => {
         const newSalePrice = calculateSalePrice(item.purchase_price, item.quantity);
-        const newSubtotal = item.quantity * newSalePrice;
         
         return supabase
           .from("items")
           .update({
-            sale_price: newSalePrice,
-            subtotal: newSubtotal
+            sale_price: newSalePrice
           })
           .eq("id", item.id);
       });
@@ -472,19 +471,8 @@ const BudgetEditor = () => {
       // Execute all updates in parallel
       await Promise.all(updates);
       
-      // Update environment subtotals
-      for (const env of environments) {
-        const envItems = allItems.filter(item => item.environment_id === env.id);
-        const itemsSubtotal = envItems.reduce((sum, item) => {
-          const newSalePrice = calculateSalePrice(item.purchase_price, item.quantity);
-          return sum + (item.quantity * newSalePrice);
-        }, 0);
-        
-        await supabase
-          .from("environments")
-          .update({ subtotal: itemsSubtotal })
-          .eq("id", env.id);
-      }
+      // Wait a bit for triggers to process
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error: any) {
       console.error("Erro ao recalcular itens:", error);
       throw error;
