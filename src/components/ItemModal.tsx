@@ -151,10 +151,10 @@ export const ItemModal = ({
               <Input
                 id="item-quantity"
                 type="number"
-                step="0.01"
-                min="0.01"
+                step="1"
+                min="1"
                 value={quantity}
-                onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                 onFocus={(e) => e.target.select()}
               />
             </div>
