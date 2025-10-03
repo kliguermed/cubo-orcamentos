@@ -183,6 +183,26 @@ const ProposalPage: React.FC = () => {
       grandTotal
     };
   };
+
+  const calculatePaymentOptions = (totalValue: number) => {
+    // Opção 1: À vista com 5% de desconto
+    const pixDiscount = totalValue * 0.05;
+    const pixTotal = totalValue - pixDiscount;
+    
+    // Opção 2: 50% entrada + 50% em 6x
+    const downPayment = totalValue * 0.50;
+    const remainingAmount = totalValue * 0.50;
+    const installmentValue = remainingAmount / 6;
+    
+    return {
+      pixTotal,
+      pixDiscount,
+      downPayment,
+      remainingAmount,
+      installmentValue,
+      installmentCount: 6
+    };
+  };
   const handlePrint = () => {
     window.print();
   };
@@ -390,22 +410,70 @@ const ProposalPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
-              <h2 className="text-xl font-semibold mb-4">💳 Formas de Pagamento</h2>
-              <div className="text-sm text-left space-y-2">
-                {(pageLayouts?.payment_methods || "Pagamento à vista com desconto de 5%. Parcelamento em até 12x no cartão.").split('.').map((line, index) => line.trim() && <p key={index}>• {line.trim()}</p>)}
+          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-center">💳 Condições de Pagamento</h2>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Opção PIX */}
+              <div className="bg-white/5 p-4 rounded-lg border-2 border-green-400/50">
+                <h3 className="text-lg font-semibold mb-3 text-green-400">1️⃣ À Vista no PIX</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Desconto de 5%:</span>
+                    <span className="text-red-400">
+                      -{formatCurrency(calculatePaymentOptions(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0)).pixDiscount)}
+                    </span>
+                  </div>
+                  <div className="border-t border-white/20 pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">Valor Total:</span>
+                      <span className="text-xl font-bold text-green-400">
+                        {formatCurrency(calculatePaymentOptions(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0)).pixTotal)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Opção Cartão */}
+              <div className="bg-white/5 p-4 rounded-lg border-2 border-blue-400/50">
+                <h3 className="text-lg font-semibold mb-3 text-blue-400">2️⃣ Parcelado no Cartão</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Entrada (50%):</span>
+                    <span className="font-semibold">
+                      {formatCurrency(calculatePaymentOptions(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0)).downPayment)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Saldo restante:</span>
+                    <span>
+                      {formatCurrency(calculatePaymentOptions(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0)).remainingAmount)}
+                    </span>
+                  </div>
+                  <div className="border-t border-white/20 pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">6 parcelas de:</span>
+                      <span className="text-xl font-bold text-blue-400">
+                        {formatCurrency(calculatePaymentOptions(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0)).installmentValue)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs opacity-75 mt-2">
+                    Total: {formatCurrency(environments.reduce((sum, env) => sum + env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) + calculateEnvironmentLabor(env), 0))}
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
-              <h2 className="text-xl font-semibold mb-4">📞 Contato</h2>
-              <div className="text-sm text-left space-y-1">
-                <p><strong>Cubo Casa Inteligente</strong></p>
-                <p>📧 contato@cubocasainteligente.com.br</p>
-                <p>📱 (44) 98407-1331</p>
-                <p>🌐 www.cubocasainteligente.com.br</p>
-              </div>
+          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4 text-center">📞 Contato</h2>
+            <div className="text-sm text-center space-y-1">
+              <p><strong>Cubo Casa Inteligente</strong></p>
+              <p>📧 contato@cubocasainteligente.com.br</p>
+              <p>📱 (44) 98407-1331</p>
+              <p>🌐 www.cubocasainteligente.com.br</p>
             </div>
           </div>
 
