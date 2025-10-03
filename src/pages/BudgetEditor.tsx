@@ -657,7 +657,20 @@ const BudgetEditor = () => {
         error
       } = await supabase.from("items").select("*, environments(name)").in("environment_id", environments.map(env => env.id));
       if (error) throw error;
-      const itemsWithEnvName = allItems || [];
+      
+      // Ordenar itens por ambiente e depois por nome do item
+      const itemsWithEnvName = (allItems || []).sort((a, b) => {
+        // Primeiro ordena por nome do ambiente
+        const envNameA = a.environments?.name || '';
+        const envNameB = b.environments?.name || '';
+        
+        if (envNameA !== envNameB) {
+          return envNameA.localeCompare(envNameB);
+        }
+        
+        // Se for o mesmo ambiente, ordena por nome do item
+        return a.name.localeCompare(b.name);
+      });
       let globalPurchaseTotal = 0;
       let globalLaborTotal = 0;
       let globalRtTotal = 0;
