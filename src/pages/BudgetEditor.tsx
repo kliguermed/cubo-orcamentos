@@ -69,7 +69,9 @@ const BudgetEditor = () => {
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [globalSummaryOpen, setGlobalSummaryOpen] = useState(false);
-  const [allEnvironmentItems, setAllEnvironmentItems] = useState<{ [envId: string]: Item[] }>({});
+  const [allEnvironmentItems, setAllEnvironmentItems] = useState<{
+    [envId: string]: Item[];
+  }>({});
   const [clientDataExpanded, setClientDataExpanded] = useState(false);
   const [calculationRulesExpanded, setCalculationRulesExpanded] = useState(false);
   const [proposalEditorOpen, setProposalEditorOpen] = useState(false);
@@ -95,21 +97,20 @@ const BudgetEditor = () => {
   // Fetch items for all environments to show totals correctly
   const fetchAllEnvironmentItems = async () => {
     if (environments.length === 0) return;
-    
     try {
-      const { data: allItems, error } = await supabase
-        .from("items")
-        .select("*")
-        .in("environment_id", environments.map(env => env.id));
-      
+      const {
+        data: allItems,
+        error
+      } = await supabase.from("items").select("*").in("environment_id", environments.map(env => env.id));
       if (error) throw error;
-      
+
       // Group items by environment_id
-      const itemsByEnv: { [envId: string]: Item[] } = {};
+      const itemsByEnv: {
+        [envId: string]: Item[];
+      } = {};
       environments.forEach(env => {
         itemsByEnv[env.id] = (allItems || []).filter(item => item.environment_id === env.id);
       });
-      
       setAllEnvironmentItems(itemsByEnv);
     } catch (error: any) {
       console.error("Erro ao buscar itens dos ambientes:", error);
@@ -117,16 +118,10 @@ const BudgetEditor = () => {
   };
   const fetchBudgetData = async () => {
     try {
-      const [budgetRes, envRes] = await Promise.all([
-        supabase.from("budgets").select("*").eq("id", id).single(), 
-        supabase.from("environments").select("*").eq("budget_id", id)
-      ]);
-      
+      const [budgetRes, envRes] = await Promise.all([supabase.from("budgets").select("*").eq("id", id).single(), supabase.from("environments").select("*").eq("budget_id", id)]);
       if (budgetRes.error) throw budgetRes.error;
-      
       setBudget(budgetRes.data as Budget);
       setEnvironments(envRes.data || []);
-      
       if (envRes.data && envRes.data.length > 0) {
         setSelectedEnvId(envRes.data[0].id);
       }
@@ -229,7 +224,7 @@ const BudgetEditor = () => {
   // Calculate environment totals for any environment (not just selected)
   const getEnvironmentFinalTotal = (envId: string, allEnvItems?: Item[]) => {
     if (!budget) return 0;
-    
+
     // Use passed items or get from state
     let environmentItems: Item[];
     if (allEnvItems) {
@@ -248,7 +243,7 @@ const BudgetEditor = () => {
     // Labor: fixed value per unit (quantity)
     const totalQuantity = environmentItems.reduce((sum, item) => sum + item.quantity, 0);
     const laborTotal = budget.labor_value * totalQuantity;
-    
+
     // Return final total (items + labor)
     return itemsTotal + laborTotal;
   };
@@ -330,14 +325,11 @@ const BudgetEditor = () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Fetch the updated item with calculated subtotal
-      const { data: updatedItem, error: fetchError } = await supabase
-        .from("items")
-        .select("*")
-        .eq("id", itemId)
-        .single();
-
+      const {
+        data: updatedItem,
+        error: fetchError
+      } = await supabase.from("items").select("*").eq("id", itemId).single();
       if (fetchError) throw fetchError;
-
       setItems(prev => prev.map(item => item.id === itemId ? updatedItem : item));
 
       // Update environment subtotal and refresh all environment items
@@ -452,36 +444,29 @@ const BudgetEditor = () => {
       });
     }
   };
-
   const recalculateAllItems = async () => {
     if (!budget) return;
-    
     try {
       // Get all items from all environments
-      const { data: allItems, error: itemsError } = await supabase
-        .from("items")
-        .select("*")
-        .in("environment_id", environments.map(env => env.id));
-      
+      const {
+        data: allItems,
+        error: itemsError
+      } = await supabase.from("items").select("*").in("environment_id", environments.map(env => env.id));
       if (itemsError) throw itemsError;
       if (!allItems || allItems.length === 0) return;
-      
+
       // Recalculate each item with new rules - only update sale_price
       // The subtotal is calculated automatically by the database
       const updates = allItems.map(item => {
         const newSalePrice = calculateSalePrice(item.purchase_price, item.quantity);
-        
-        return supabase
-          .from("items")
-          .update({
-            sale_price: newSalePrice
-          })
-          .eq("id", item.id);
+        return supabase.from("items").update({
+          sale_price: newSalePrice
+        }).eq("id", item.id);
       });
-      
+
       // Execute all updates in parallel
       await Promise.all(updates);
-      
+
       // Wait a bit for triggers to process
       await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error: any) {
@@ -489,43 +474,37 @@ const BudgetEditor = () => {
       throw error;
     }
   };
-
   const saveBudgetCalculationRules = async () => {
     if (!budget) return;
-    
     try {
       // Save the new rules to the budget
-      const { error } = await supabase
-        .from("budgets")
-        .update({
-          markup_percentage: budget.markup_percentage,
-          rt_type: budget.rt_type,
-          rt_value: budget.rt_value,
-          rt_distribution: budget.rt_distribution,
-          labor_type: budget.labor_type,
-          labor_value: budget.labor_value
-        })
-        .eq("id", id);
-      
+      const {
+        error
+      } = await supabase.from("budgets").update({
+        markup_percentage: budget.markup_percentage,
+        rt_type: budget.rt_type,
+        rt_value: budget.rt_value,
+        rt_distribution: budget.rt_distribution,
+        labor_type: budget.labor_type,
+        labor_value: budget.labor_value
+      }).eq("id", id);
       if (error) throw error;
-      
       toast({
         title: "Recalculando...",
         description: "Aplicando novas regras a todos os itens"
       });
-      
+
       // Recalculate all items with new rules
       await recalculateAllItems();
-      
+
       // Refresh all data
       await fetchBudgetData();
       await fetchAllEnvironmentItems();
-      
+
       // Refresh selected environment items
       if (selectedEnvId) {
         await fetchItems(selectedEnvId);
       }
-      
       toast({
         title: "Regras atualizadas",
         description: "As regras de cálculo foram aplicadas com sucesso"
@@ -590,8 +569,10 @@ const BudgetEditor = () => {
   const saveItem = async (itemData: Omit<Item, 'id'>) => {
     try {
       // Remove subtotal from itemData as it's calculated by database trigger
-      const { subtotal, ...dataToSave } = itemData as any;
-      
+      const {
+        subtotal,
+        ...dataToSave
+      } = itemData as any;
       if (editingItem) {
         // Update existing item
         const {
@@ -616,7 +597,7 @@ const BudgetEditor = () => {
 
       // Wait for database trigger to process
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Refresh items to get calculated values
       await updateEnvironmentSubtotal();
       await fetchAllEnvironmentItems();
@@ -661,17 +642,16 @@ const BudgetEditor = () => {
         error
       } = await supabase.from("items").select("*, environments(name)").in("environment_id", environments.map(env => env.id));
       if (error) throw error;
-      
+
       // Ordenar itens por ambiente e depois por nome do item
       const itemsWithEnvName = (allItems || []).sort((a, b) => {
         // Primeiro ordena por nome do ambiente
         const envNameA = a.environments?.name || '';
         const envNameB = b.environments?.name || '';
-        
         if (envNameA !== envNameB) {
           return envNameA.localeCompare(envNameB);
         }
-        
+
         // Se for o mesmo ambiente, ordena por nome do item
         return a.name.localeCompare(b.name);
       });
@@ -786,43 +766,42 @@ const BudgetEditor = () => {
                   </Button>
                 </div>
               </CardHeader>
-              {clientDataExpanded && (
-                <CardContent className="space-y-4">
+              {clientDataExpanded && <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="client-name">Nome completo</Label>
                     <Input id="client-name" value={budget.client_name} onChange={e => setBudget(prev => prev ? {
+                  ...prev,
+                  client_name: e.target.value
+                } : null)} onFocus={e => {
+                  if (e.target.value === "Nome do cliente") {
+                    setBudget(prev => prev ? {
                       ...prev,
-                      client_name: e.target.value
-                    } : null)} onFocus={e => {
-                      if (e.target.value === "Nome do cliente") {
-                        setBudget(prev => prev ? {
-                          ...prev,
-                          client_name: ""
-                        } : null);
-                      }
-                      e.target.select();
-                    }} placeholder="Digite o nome do cliente" />
+                      client_name: ""
+                    } : null);
+                  }
+                  e.target.select();
+                }} placeholder="Digite o nome do cliente" />
                   </div>
                   <div>
                     <Label htmlFor="client-cpf">CPF/CNPJ</Label>
                     <Input id="client-cpf" value={budget.client_cpf_cnpj || ""} onChange={e => setBudget(prev => prev ? {
-                      ...prev,
-                      client_cpf_cnpj: e.target.value
-                    } : null)} />
+                  ...prev,
+                  client_cpf_cnpj: e.target.value
+                } : null)} />
                   </div>
                   <div>
                     <Label htmlFor="client-phone">Telefone</Label>
                     <Input id="client-phone" value={budget.client_phone || ""} onChange={e => setBudget(prev => prev ? {
-                      ...prev,
-                      client_phone: e.target.value
-                    } : null)} />
+                  ...prev,
+                  client_phone: e.target.value
+                } : null)} />
                   </div>
                   <div>
                     <Label htmlFor="client-email">E-mail</Label>
                     <Input id="client-email" type="email" value={budget.client_email || ""} onChange={e => setBudget(prev => prev ? {
-                      ...prev,
-                      client_email: e.target.value
-                    } : null)} />
+                  ...prev,
+                  client_email: e.target.value
+                } : null)} />
                   </div>
                   <div className="pt-4">
                     <Button onClick={saveBudgetClient} className="w-full" size={isMobile ? "sm" : "default"}>
@@ -830,8 +809,7 @@ const BudgetEditor = () => {
                       {isMobile ? "Salvar" : "Salvar dados do cliente"}
                     </Button>
                   </div>
-                </CardContent>
-              )}
+                </CardContent>}
             </Card>
 
             {/* Calculation Rules */}
@@ -845,39 +823,29 @@ const BudgetEditor = () => {
                 </div>
                 <CardDescription>Regras específicas deste orçamento</CardDescription>
               </CardHeader>
-              {calculationRulesExpanded && (
-                <CardContent className="space-y-4">
+              {calculationRulesExpanded && <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="markup">Markup (%)</Label>
-                    <Input 
-                      id="markup"
-                      type="number" 
-                      value={budget.markup_percentage} 
-                      onChange={e => setBudget(prev => prev ? {...prev, markup_percentage: Number(e.target.value)} : null)}
-                      onFocus={e => e.target.select()}
-                    />
+                    <Input id="markup" type="number" value={budget.markup_percentage} onChange={e => setBudget(prev => prev ? {
+                  ...prev,
+                  markup_percentage: Number(e.target.value)
+                } : null)} onFocus={e => e.target.select()} />
                   </div>
                   
                   <div>
                     <Label htmlFor="rt-value">RT - Valor {budget.rt_type === 'percentage' ? '(%)' : '(R$)'}</Label>
-                    <Input 
-                      id="rt-value"
-                      type="number" 
-                      value={budget.rt_value} 
-                      onChange={e => setBudget(prev => prev ? {...prev, rt_value: Number(e.target.value)} : null)}
-                      onFocus={e => e.target.select()}
-                    />
+                    <Input id="rt-value" type="number" value={budget.rt_value} onChange={e => setBudget(prev => prev ? {
+                  ...prev,
+                  rt_value: Number(e.target.value)
+                } : null)} onFocus={e => e.target.select()} />
                   </div>
                   
                   <div>
                     <Label htmlFor="labor-value">Mão de Obra - Valor (R$ por unidade)</Label>
-                    <Input 
-                      id="labor-value"
-                      type="number" 
-                      value={budget.labor_value} 
-                      onChange={e => setBudget(prev => prev ? {...prev, labor_value: Number(e.target.value)} : null)}
-                      onFocus={e => e.target.select()}
-                    />
+                    <Input id="labor-value" type="number" value={budget.labor_value} onChange={e => setBudget(prev => prev ? {
+                  ...prev,
+                  labor_value: Number(e.target.value)
+                } : null)} onFocus={e => e.target.select()} />
                   </div>
                   
                   <div className="pt-4">
@@ -886,8 +854,7 @@ const BudgetEditor = () => {
                       {isMobile ? "Salvar" : "Salvar regras de cálculo"}
                     </Button>
                   </div>
-                </CardContent>
-              )}
+                </CardContent>}
             </Card>
 
             {/* Environments */}
@@ -938,15 +905,11 @@ const BudgetEditor = () => {
                        {isMobile ? "Novo Ambiente" : "Adicionar Ambiente"}
                      </Button>
                      <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
-                       {FEATURE_FLAGS.proposalImageLibrary && (
-                         <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                       {FEATURE_FLAGS.proposalImageLibrary && <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
                            <ImageIcon className="h-4 w-4 mr-2" />
                            {isMobile ? "Capas" : "Formatar Proposta"}
-                         </Button>
-                       )}
-                       <Button variant="secondary" onClick={() => navigate('/configuration-manager')} size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
-                         {isMobile ? "Configurar" : "Configurar Sistema"}
-                       </Button>
+                         </Button>}
+                       
                      </div>
                    </div>
               </CardContent>
@@ -977,43 +940,21 @@ const BudgetEditor = () => {
                          <Plus className="h-4 w-4 mr-2" />
                          {isMobile ? "Novo Item" : "Adicionar primeiro item"}
                        </Button>
-                     </div> : isMobile ? (
-                       <div className="space-y-3">
-                         {items.map(item => (
-                           <Card key={item.id} className="p-3">
+                     </div> : isMobile ? <div className="space-y-3">
+                         {items.map(item => <Card key={item.id} className="p-3">
                              <div className="space-y-3">
                                <div>
                                  <Label className="text-xs text-muted-foreground">Nome do Item</Label>
-                                 <Input 
-                                   value={item.name} 
-                                   onChange={e => updateItem(item.id, "name", e.target.value)} 
-                                   className="h-8 text-sm"
-                                 />
+                                 <Input value={item.name} onChange={e => updateItem(item.id, "name", e.target.value)} className="h-8 text-sm" />
                                </div>
                                <div className="grid grid-cols-2 gap-2">
                                  <div>
                                    <Label className="text-xs text-muted-foreground">Qtd</Label>
-                                   <Input 
-                                     type="number" 
-                                     step="0.01" 
-                                     min="0" 
-                                     value={item.quantity} 
-                                     onChange={e => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} 
-                                     onFocus={e => e.target.select()} 
-                                     className="h-8 text-center text-sm"
-                                   />
+                                   <Input type="number" step="0.01" min="0" value={item.quantity} onChange={e => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} className="h-8 text-center text-sm" />
                                  </div>
                                  <div>
                                    <Label className="text-xs text-muted-foreground">Preço Compra</Label>
-                                   <Input 
-                                     type="number" 
-                                     step="0.01" 
-                                     min="0" 
-                                     value={item.purchase_price} 
-                                     onChange={e => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)} 
-                                     onFocus={e => e.target.select()} 
-                                     className="h-8 text-right text-sm"
-                                   />
+                                   <Input type="number" step="0.01" min="0" value={item.purchase_price} onChange={e => updateItem(item.id, "purchase_price", parseFloat(e.target.value) || 0)} onFocus={e => e.target.select()} className="h-8 text-right text-sm" />
                                  </div>
                                </div>
                                <div className="grid grid-cols-2 gap-2">
@@ -1030,21 +971,13 @@ const BudgetEditor = () => {
                                    </div>
                                  </div>
                                </div>
-                               <Button 
-                                 variant="outline" 
-                                 size="sm" 
-                                 onClick={() => deleteItem(item.id)}
-                                 className="w-full text-destructive hover:text-destructive"
-                               >
+                               <Button variant="outline" size="sm" onClick={() => deleteItem(item.id)} className="w-full text-destructive hover:text-destructive">
                                  <Trash2 className="h-4 w-4 mr-2" />
                                  Remover Item
                                </Button>
                              </div>
-                           </Card>
-                         ))}
-                       </div>
-                     ) : (
-                      <div className="overflow-x-auto">
+                           </Card>)}
+                       </div> : <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -1083,8 +1016,7 @@ const BudgetEditor = () => {
                               </TableRow>)}
                           </TableBody>
                          </Table>
-                       </div>
-                     )}
+                       </div>}
                    
                      {/* Environment Summary */}
                      {items.length > 0 && <div className="mt-6 p-3 sm:p-4 bg-muted/50 rounded-lg">
@@ -1142,38 +1074,30 @@ const BudgetEditor = () => {
 
       <GlobalSummaryModal open={globalSummaryOpen} onOpenChange={setGlobalSummaryOpen} calculateGlobalTotals={calculateGlobalTotals} />
       
-      {FEATURE_FLAGS.proposalImageLibrary && (
-        <ProposalEditorModal
-          open={proposalEditorOpen}
-          onOpenChange={setProposalEditorOpen}
-          environments={environments}
-          onUpdateEnvironmentCover={async (envId: string, coverUrl: string) => {
-            try {
-              const { error } = await supabase
-                .from('environments')
-                .update({ cover_image_url: coverUrl })
-                .eq('id', envId);
-              
-              if (error) throw error;
-              
-              setEnvironments(prev =>
-                prev.map(e => e.id === envId ? { ...e, cover_image_url: coverUrl } : e)
-              );
-              
-              toast({
-                title: 'Capa atualizada',
-                description: 'A capa do ambiente foi alterada com sucesso!'
-              });
-            } catch (error: any) {
-              toast({
-                title: 'Erro ao atualizar capa',
-                description: error.message,
-                variant: 'destructive'
-              });
-            }
-          }}
-        />
-      )}
+      {FEATURE_FLAGS.proposalImageLibrary && <ProposalEditorModal open={proposalEditorOpen} onOpenChange={setProposalEditorOpen} environments={environments} onUpdateEnvironmentCover={async (envId: string, coverUrl: string) => {
+      try {
+        const {
+          error
+        } = await supabase.from('environments').update({
+          cover_image_url: coverUrl
+        }).eq('id', envId);
+        if (error) throw error;
+        setEnvironments(prev => prev.map(e => e.id === envId ? {
+          ...e,
+          cover_image_url: coverUrl
+        } : e));
+        toast({
+          title: 'Capa atualizada',
+          description: 'A capa do ambiente foi alterada com sucesso!'
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao atualizar capa',
+          description: error.message,
+          variant: 'destructive'
+        });
+      }
+    }} />}
     </div>;
 };
 export default BudgetEditor;
