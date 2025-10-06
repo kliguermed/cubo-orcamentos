@@ -34,11 +34,11 @@ export function CopyImageLibraryDialog({
   newEnvironmentName,
   onConfirm
 }: CopyImageLibraryDialogProps) {
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
 
   const handleConfirm = () => {
-    onConfirm(selectedTemplateId || null);
-    setSelectedTemplateId('');
+    onConfirm(selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : null);
+    setSelectedTemplateId('none');
   };
 
   const templatesWithImages = templates.filter(t => t.image_library?.length > 0);
@@ -62,7 +62,7 @@ export function CopyImageLibraryDialog({
                 <SelectValue placeholder="Não copiar imagens" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Não copiar imagens</SelectItem>
+                <SelectItem value="none">Não copiar imagens</SelectItem>
                 {templatesWithImages.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     <div className="flex items-center gap-2">
