@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { EnvironmentModal } from "@/components/EnvironmentModal";
 import { ItemModal } from "@/components/ItemModal";
 import { GlobalSummaryModal } from "@/components/GlobalSummaryModal";
+import { ProposalEditorModal } from "@/components/ProposalEditor/ProposalEditorModal";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 interface Budget {
   id: string;
   protocol_number: number;
@@ -36,6 +38,7 @@ interface Environment {
   name: string;
   description: string;
   image_url: string;
+  cover_image_url?: string;
   subtotal: number;
 }
 interface Item {
@@ -69,6 +72,7 @@ const BudgetEditor = () => {
   const [allEnvironmentItems, setAllEnvironmentItems] = useState<{ [envId: string]: Item[] }>({});
   const [clientDataExpanded, setClientDataExpanded] = useState(false);
   const [calculationRulesExpanded, setCalculationRulesExpanded] = useState(false);
+  const [proposalEditorOpen, setProposalEditorOpen] = useState(false);
   useEffect(() => {
     if (id) {
       fetchBudgetData();
@@ -933,9 +937,17 @@ const BudgetEditor = () => {
                        <Plus className="h-4 w-4 mr-2" />
                        {isMobile ? "Novo Ambiente" : "Adicionar Ambiente"}
                      </Button>
-                     <Button variant="secondary" onClick={() => navigate('/configuration-manager')} size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
-                       {isMobile ? "Configurar" : "Configurar Sistema"}
-                     </Button>
+                     <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+                       {FEATURE_FLAGS.proposalImageLibrary && (
+                         <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                           <ImageIcon className="h-4 w-4 mr-2" />
+                           {isMobile ? "Capas" : "Formatar Proposta"}
+                         </Button>
+                       )}
+                       <Button variant="secondary" onClick={() => navigate('/configuration-manager')} size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                         {isMobile ? "Configurar" : "Configurar Sistema"}
+                       </Button>
+                     </div>
                    </div>
               </CardContent>
             </Card>
@@ -1129,6 +1141,39 @@ const BudgetEditor = () => {
       <ItemModal item={editingItem} open={itemModalOpen} onOpenChange={setItemModalOpen} onSave={saveItem} environmentId={selectedEnvId || ""} settings={budget} />
 
       <GlobalSummaryModal open={globalSummaryOpen} onOpenChange={setGlobalSummaryOpen} calculateGlobalTotals={calculateGlobalTotals} />
+      
+      {FEATURE_FLAGS.proposalImageLibrary && (
+        <ProposalEditorModal
+          open={proposalEditorOpen}
+          onOpenChange={setProposalEditorOpen}
+          environments={environments}
+          onUpdateEnvironmentCover={async (envId: string, coverUrl: string) => {
+            try {
+              const { error } = await supabase
+                .from('environments')
+                .update({ cover_image_url: coverUrl })
+                .eq('id', envId);
+              
+              if (error) throw error;
+              
+              setEnvironments(prev =>
+                prev.map(e => e.id === envId ? { ...e, cover_image_url: coverUrl } : e)
+              );
+              
+              toast({
+                title: 'Capa atualizada',
+                description: 'A capa do ambiente foi alterada com sucesso!'
+              });
+            } catch (error: any) {
+              toast({
+                title: 'Erro ao atualizar capa',
+                description: error.message,
+                variant: 'destructive'
+              });
+            }
+          }}
+        />
+      )}
     </div>;
 };
 export default BudgetEditor;

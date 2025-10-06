@@ -92,6 +92,14 @@ export const useAssetLibrary = () => {
         .from('assets')
         .getPublicUrl(fileName);
       
+      // Obter dimensões da imagem
+      const img = new Image();
+      const imgLoadPromise = new Promise<{width: number, height: number}>((resolve) => {
+        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.src = publicUrl;
+      });
+      const { width, height } = await imgLoadPromise;
+      
       // Criar registro
       const { data, error } = await supabase
         .from('assets')
@@ -99,11 +107,12 @@ export const useAssetLibrary = () => {
           url: publicUrl,
           mime_type: file.type,
           checksum,
-          width: metadata.width,
-          height: metadata.height,
+          width,
+          height,
           categories: metadata.categories || [],
           tags: metadata.tags || [],
-          copyright_info: metadata.copyright_info
+          copyright_info: metadata.copyright_info,
+          user_id: user.id
         }])
         .select()
         .single();

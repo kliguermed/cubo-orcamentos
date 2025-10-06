@@ -14,6 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "asset_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_change_logs: {
+        Row: {
+          action: string
+          changed_by: string | null
+          changes: Json | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          changes?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      assets: {
+        Row: {
+          categories: string[] | null
+          checksum: string
+          copyright_info: string | null
+          created_at: string
+          height: number | null
+          id: string
+          mime_type: string
+          tags: string[] | null
+          updated_at: string
+          url: string
+          usage_count: number | null
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          categories?: string[] | null
+          checksum: string
+          copyright_info?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          mime_type: string
+          tags?: string[] | null
+          updated_at?: string
+          url: string
+          usage_count?: number | null
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          categories?: string[] | null
+          checksum?: string
+          copyright_info?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          mime_type?: string
+          tags?: string[] | null
+          updated_at?: string
+          url?: string
+          usage_count?: number | null
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           client_cpf_cnpj: string | null
@@ -113,6 +229,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           description: string | null
+          focal_point: Json | null
           id: string
           image_url: string | null
           name: string
@@ -124,6 +241,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          focal_point?: Json | null
           id?: string
           image_url?: string | null
           name: string
@@ -135,6 +253,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          focal_point?: Json | null
           id?: string
           image_url?: string | null
           name?: string
