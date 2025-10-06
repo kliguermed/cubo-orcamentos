@@ -235,9 +235,11 @@ export type Database = {
         Row: {
           background_image_url: string | null
           created_at: string
+          default_image_url: string | null
           description: string | null
           html_content: string | null
           id: string
+          image_library: Json | null
           name: string
           updated_at: string
           user_id: string
@@ -245,9 +247,11 @@ export type Database = {
         Insert: {
           background_image_url?: string | null
           created_at?: string
+          default_image_url?: string | null
           description?: string | null
           html_content?: string | null
           id?: string
+          image_library?: Json | null
           name: string
           updated_at?: string
           user_id: string
@@ -255,9 +259,11 @@ export type Database = {
         Update: {
           background_image_url?: string | null
           created_at?: string
+          default_image_url?: string | null
           description?: string | null
           html_content?: string | null
           id?: string
+          image_library?: Json | null
           name?: string
           updated_at?: string
           user_id?: string
@@ -275,6 +281,7 @@ export type Database = {
           image_url: string | null
           name: string
           subtotal: number | null
+          template_id: string | null
           updated_at: string
         }
         Insert: {
@@ -287,6 +294,7 @@ export type Database = {
           image_url?: string | null
           name: string
           subtotal?: number | null
+          template_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -299,6 +307,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           subtotal?: number | null
+          template_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -307,6 +316,13 @@ export type Database = {
             columns: ["budget_id"]
             isOneToOne: false
             referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "environments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "environment_templates"
             referencedColumns: ["id"]
           },
         ]

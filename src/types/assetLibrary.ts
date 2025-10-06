@@ -59,3 +59,22 @@ export interface AssetEnvironmentMapping {
   created_at: string;
   updated_at: string;
 }
+
+export interface EnvironmentTemplateImage {
+  id: string;
+  url: string;
+  is_default: boolean;
+}
+
+export interface EnvironmentTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  html_content?: string;
+  background_image_url?: string;
+  image_library: EnvironmentTemplateImage[];
+  default_image_url?: string;
+  created_at: string;
+  updated_at: string;
+}

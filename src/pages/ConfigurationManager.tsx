@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, Edit, Trash2, Image as ImageIcon, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Image as ImageIcon, Save, X } from 'lucide-react';
 import { ProposalFormattingTab } from '@/components/ProposalFormatting/ProposalFormattingTab';
+import { ImagePicker } from '@/components/AssetLibrary/ImagePicker';
+import { EnvironmentTemplate as ImportedEnvironmentTemplate, EnvironmentTemplateImage } from '@/types/assetLibrary';
 
 interface Settings {
   id: string;
@@ -23,14 +25,6 @@ interface Settings {
   payment_terms: string;
   created_at?: string;
   updated_at?: string;
-}
-
-interface EnvironmentTemplate {
-  id: string;
-  name: string;
-  description: string;
-  background_image?: string;
-  html_content?: string;
 }
 
 interface PageLayouts {
@@ -48,7 +42,7 @@ const ConfigurationManager: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [environments, setEnvironments] = useState<EnvironmentTemplate[]>([]);
+  const [environments, setEnvironments] = useState<ImportedEnvironmentTemplate[]>([]);
   const [pageLayouts, setPageLayouts] = useState<PageLayouts>({
     service_scope: "Instalação completa de automação residencial com materiais de primeira qualidade e mão de obra especializada.",
     payment_methods: "Pagamento à vista com desconto de 5%. Parcelamento em até 12x no cartão de crédito.",
@@ -74,10 +68,12 @@ const ConfigurationManager: React.FC = () => {
 
   // Environment form states
   const [showEnvironmentForm, setShowEnvironmentForm] = useState(false);
-  const [editingEnvironment, setEditingEnvironment] = useState<EnvironmentTemplate | null>(null);
+  const [editingEnvironment, setEditingEnvironment] = useState<ImportedEnvironmentTemplate | null>(null);
   const [envName, setEnvName] = useState('');
   const [envDescription, setEnvDescription] = useState('');
   const [envHtmlContent, setEnvHtmlContent] = useState('');
+  const [envImageLibrary, setEnvImageLibrary] = useState<EnvironmentTemplateImage[]>([]);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -181,12 +177,17 @@ const ConfigurationManager: React.FC = () => {
         return;
       }
 
-      const mappedEnvironments: EnvironmentTemplate[] = (data || []).map(env => ({
+      const mappedEnvironments: ImportedEnvironmentTemplate[] = (data || []).map(env => ({
         id: env.id,
+        user_id: env.user_id,
         name: env.name,
         description: env.description || '',
-        background_image: env.background_image_url || '',
+        background_image_url: env.background_image_url || '',
         html_content: env.html_content || '',
+        image_library: (env.image_library as any || []) as EnvironmentTemplateImage[],
+        default_image_url: env.default_image_url || undefined,
+        created_at: env.created_at,
+        updated_at: env.updated_at,
       }));
 
       setEnvironments(mappedEnvironments);
@@ -267,11 +268,15 @@ const ConfigurationManager: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const defaultImage = envImageLibrary.find(img => img.is_default);
+      
       const envData = {
         user_id: session.user.id,
         name: envName,
         description: envDescription,
         html_content: envHtmlContent,
+        image_library: envImageLibrary as any,
+        default_image_url: defaultImage?.url || null,
       };
 
       if (editingEnvironment) {
@@ -294,6 +299,7 @@ const ConfigurationManager: React.FC = () => {
       setEnvName('');
       setEnvDescription('');
       setEnvHtmlContent('');
+      setEnvImageLibrary([]);
 
       toast({
         title: "Sucesso",
@@ -312,12 +318,59 @@ const ConfigurationManager: React.FC = () => {
     }
   };
 
-  const handleEditEnvironment = (env: EnvironmentTemplate) => {
+  const handleEditEnvironment = (env: ImportedEnvironmentTemplate) => {
     setEditingEnvironment(env);
     setEnvName(env.name);
-    setEnvDescription(env.description);
+    setEnvDescription(env.description || '');
     setEnvHtmlContent(env.html_content || '');
+    setEnvImageLibrary(env.image_library || []);
     setShowEnvironmentForm(true);
+  };
+
+  const handleAddImageToLibrary = (assetId: string, assetUrl: string) => {
+    if (envImageLibrary.length >= 4) {
+      toast({
+        title: "Limite atingido",
+        description: "Você pode adicionar no máximo 4 imagens por ambiente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newImage: EnvironmentTemplateImage = {
+      id: assetId,
+      url: assetUrl,
+      is_default: envImageLibrary.length === 0, // Primeira imagem é padrão
+    };
+
+    setEnvImageLibrary(prev => [...prev, newImage]);
+    setImagePickerOpen(false);
+  };
+
+  const handleRemoveImageFromLibrary = (imageId: string) => {
+    const imageToRemove = envImageLibrary.find(img => img.id === imageId);
+    const wasDefault = imageToRemove?.is_default;
+
+    let updatedLibrary = envImageLibrary.filter(img => img.id !== imageId);
+
+    // Se removeu a imagem padrão, marca a primeira como padrão
+    if (wasDefault && updatedLibrary.length > 0) {
+      updatedLibrary = updatedLibrary.map((img, index) => ({
+        ...img,
+        is_default: index === 0,
+      }));
+    }
+
+    setEnvImageLibrary(updatedLibrary);
+  };
+
+  const handleSetDefaultImage = (imageId: string) => {
+    setEnvImageLibrary(prev =>
+      prev.map(img => ({
+        ...img,
+        is_default: img.id === imageId,
+      }))
+    );
   };
 
   const handleDeleteEnvironment = async (envId: string) => {
@@ -592,6 +645,71 @@ const ConfigurationManager: React.FC = () => {
                         />
                       </div>
 
+                      {/* Biblioteca de Imagens */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Biblioteca de Imagens (máx. 4)</Label>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setImagePickerOpen(true)}
+                            disabled={envImageLibrary.length >= 4}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Adicionar Imagem
+                          </Button>
+                        </div>
+
+                        {envImageLibrary.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {envImageLibrary.map((img) => (
+                              <div
+                                key={img.id}
+                                className="relative border rounded-lg overflow-hidden group"
+                              >
+                                <img
+                                  src={img.url}
+                                  alt="Imagem do ambiente"
+                                  className="w-full h-32 object-cover"
+                                />
+                                
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={img.is_default ? "default" : "secondary"}
+                                    onClick={() => handleSetDefaultImage(img.id)}
+                                  >
+                                    {img.is_default ? "Padrão" : "Marcar Padrão"}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleRemoveImageFromLibrary(img.id)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+
+                                {img.is_default && (
+                                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                                    Padrão
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
+                            <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">Nenhuma imagem adicionada</p>
+                            <p className="text-xs">As imagens serão usadas como capas padrão para este ambiente</p>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="flex space-x-2">
                         <Button onClick={handleSaveEnvironment}>
                           {editingEnvironment ? 'Atualizar' : 'Salvar'}
@@ -604,6 +722,7 @@ const ConfigurationManager: React.FC = () => {
                             setEnvName('');
                             setEnvDescription('');
                             setEnvHtmlContent('');
+                            setEnvImageLibrary([]);
                           }}
                         >
                           Cancelar
@@ -620,7 +739,33 @@ const ConfigurationManager: React.FC = () => {
                         <CardTitle className="text-lg">{env.name}</CardTitle>
                         <CardDescription>{env.description}</CardDescription>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-3">
+                        {/* Preview da biblioteca de imagens */}
+                        {env.image_library && env.image_library.length > 0 && (
+                          <div className="flex gap-2">
+                            {env.image_library.slice(0, 3).map((img) => (
+                              <div
+                                key={img.id}
+                                className="relative w-16 h-16 rounded overflow-hidden border-2"
+                                style={{
+                                  borderColor: img.is_default ? 'hsl(var(--primary))' : 'transparent'
+                                }}
+                              >
+                                <img
+                                  src={img.url}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                            {env.image_library.length > 3 && (
+                              <div className="w-16 h-16 rounded border flex items-center justify-center text-xs text-muted-foreground">
+                                +{env.image_library.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="flex space-x-2">
                           <Button
                             variant="outline"
@@ -782,6 +927,13 @@ const ConfigurationManager: React.FC = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* ImagePicker para biblioteca de imagens do ambiente */}
+      <ImagePicker
+        open={imagePickerOpen}
+        onOpenChange={setImagePickerOpen}
+        onSelect={handleAddImageToLibrary}
+      />
     </div>
   );
 };

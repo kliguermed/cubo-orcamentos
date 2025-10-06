@@ -1,17 +1,57 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/types/assetLibrary';
 
+interface Environment {
+  id: string;
+  name: string;
+  cover_image_url?: string;
+}
+
 const ProposalPreview = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const budgetId = searchParams.get('budgetId');
+  
   const [mainCoverAsset, setMainCoverAsset] = useState<Asset | null>(null);
+  const [environments, setEnvironments] = useState<Environment[]>([]);
+  const [budgetName, setBudgetName] = useState<string>('');
 
   useEffect(() => {
     loadMainCover();
-  }, []);
+    if (budgetId) {
+      loadBudgetData();
+    }
+  }, [budgetId]);
+
+  const loadBudgetData = async () => {
+    if (!budgetId) return;
+
+    try {
+      const { data: budget } = await supabase
+        .from('budgets')
+        .select('client_name')
+        .eq('id', budgetId)
+        .maybeSingle();
+
+      if (budget) {
+        setBudgetName(budget.client_name);
+      }
+
+      const { data: envs } = await supabase
+        .from('environments')
+        .select('id, name, cover_image_url')
+        .eq('budget_id', budgetId)
+        .order('created_at');
+
+      setEnvironments(envs || []);
+    } catch (error) {
+      console.error('Erro ao carregar dados do orçamento:', error);
+    }
+  };
 
   const loadMainCover = async () => {
     try {
@@ -46,13 +86,15 @@ const ProposalPreview = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/configuration-manager')}
+            onClick={() => budgetId ? navigate(`/budget/${budgetId}`) : navigate('/configuration-manager')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Voltar para Configurações
+            {budgetId ? 'Voltar ao Orçamento' : 'Voltar para Configurações'}
           </Button>
-          <h1 className="text-xl font-semibold">Preview da Proposta</h1>
+          <h1 className="text-xl font-semibold">
+            {budgetId ? `Preview - ${budgetName || 'Proposta'}` : 'Preview da Proposta'}
+          </h1>
           <div className="w-32" /> {/* Spacer para centralizar título */}
         </div>
       </header>
@@ -80,7 +122,9 @@ const ProposalPreview = () => {
             {/* Overlay com informações */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-12">
               <div className="text-white">
-                <h2 className="text-5xl font-bold mb-4">Proposta Comercial</h2>
+                <h2 className="text-5xl font-bold mb-4">
+                  {budgetId ? `Proposta para ${budgetName || 'Cliente'}` : 'Proposta Comercial'}
+                </h2>
                 <p className="text-xl mb-2">Automação Residencial Premium</p>
                 <p className="text-lg opacity-90">
                   {new Date().toLocaleDateString('pt-BR', {
@@ -92,6 +136,35 @@ const ProposalPreview = () => {
               </div>
             </div>
           </div>
+
+          {/* Ambientes (se tiver budgetId) */}
+          {budgetId && environments.length > 0 && (
+            <div className="space-y-6 mb-8">
+              <h3 className="text-2xl font-semibold">Ambientes</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {environments.map((env) => (
+                  <div key={env.id} className="border rounded-lg overflow-hidden">
+                    <div className="aspect-video bg-muted relative">
+                      {env.cover_image_url ? (
+                        <img
+                          src={env.cover_image_url}
+                          alt={env.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          Sem capa
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-semibold">{env.name}</h4>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Informações sobre a funcionalidade */}
           <div className="bg-card rounded-lg border p-8 space-y-4">
@@ -117,11 +190,11 @@ const ProposalPreview = () => {
 
             <div className="pt-4 border-t mt-6">
               <Button
-                onClick={() => navigate('/configuration-manager')}
+                onClick={() => budgetId ? navigate(`/budget/${budgetId}`) : navigate('/configuration-manager')}
                 size="lg"
                 className="w-full"
               >
-                Voltar e Configurar Formatação
+                {budgetId ? 'Voltar ao Orçamento' : 'Voltar e Configurar Formatação'}
               </Button>
             </div>
           </div>

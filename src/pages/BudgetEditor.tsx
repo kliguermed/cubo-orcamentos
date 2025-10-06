@@ -15,8 +15,12 @@ import { EnvironmentModal } from "@/components/EnvironmentModal";
 import { ItemModal } from "@/components/ItemModal";
 import { GlobalSummaryModal } from "@/components/GlobalSummaryModal";
 import { ProposalEditorModal } from "@/components/ProposalEditor/ProposalEditorModal";
+import { EnvironmentSelector } from "@/components/BudgetEditor/EnvironmentSelector";
+import { CopyImageLibraryDialog } from "@/components/BudgetEditor/CopyImageLibraryDialog";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { applyEnvironmentCovers } from "@/utils/applyEnvironmentCovers";
+import { EnvironmentTemplate } from "@/types/assetLibrary";
+import { loadTemplates, createEnvironmentFromTemplate } from "./BudgetEditor_helpers";
 interface Budget {
   id: string;
   protocol_number: number;
@@ -41,6 +45,7 @@ interface Environment {
   image_url: string;
   cover_image_url?: string;
   subtotal: number;
+  template_id?: string;
 }
 interface Item {
   id: string;
@@ -76,9 +81,14 @@ const BudgetEditor = () => {
   const [clientDataExpanded, setClientDataExpanded] = useState(false);
   const [calculationRulesExpanded, setCalculationRulesExpanded] = useState(false);
   const [proposalEditorOpen, setProposalEditorOpen] = useState(false);
+  const [templates, setTemplates] = useState<EnvironmentTemplate[]>([]);
+  const [newEnvName, setNewEnvName] = useState('');
+  const [copyLibraryDialogOpen, setCopyLibraryDialogOpen] = useState(false);
+  const [pendingEnvName, setPendingEnvName] = useState('');
   useEffect(() => {
     if (id) {
       fetchBudgetData();
+      loadTemplates().then(setTemplates);
     }
   }, [id]);
   useEffect(() => {
@@ -914,11 +924,24 @@ const BudgetEditor = () => {
                       </div>
                     </div>}
                   
-                   <div className={isMobile ? "space-y-2" : "flex justify-between items-center mb-4"}>
-                     <Button onClick={addEnvironment} variant="outline" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                   <div className={isMobile ? "space-y-2" : "space-y-4"}>
+                     <EnvironmentSelector
+                       templates={templates}
+                       value={newEnvName}
+                       onChange={setNewEnvName}
+                       onCreateStandard={(name) => {
+                         setPendingEnvName(name);
+                         setCopyLibraryDialogOpen(true);
+                       }}
+                       onCreateTemporary={(name) => {
+                         setNewEnvName(name);
+                       }}
+                     />
+                     <Button onClick={addEnvironment} variant="outline" size={isMobile ? "sm" : "default"} className="w-full">
                        <Plus className="h-4 w-4 mr-2" />
-                       {isMobile ? "Novo Ambiente" : "Adicionar Ambiente"}
+                       Adicionar
                      </Button>
+                   </div>
                      <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
                        {FEATURE_FLAGS.proposalImageLibrary && <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
                            <ImageIcon className="h-4 w-4 mr-2" />
@@ -1089,7 +1112,12 @@ const BudgetEditor = () => {
 
       <GlobalSummaryModal open={globalSummaryOpen} onOpenChange={setGlobalSummaryOpen} calculateGlobalTotals={calculateGlobalTotals} />
       
-      {FEATURE_FLAGS.proposalImageLibrary && <ProposalEditorModal open={proposalEditorOpen} onOpenChange={setProposalEditorOpen} environments={environments} onUpdateEnvironmentCover={async (envId: string, coverUrl: string) => {
+      {FEATURE_FLAGS.proposalImageLibrary && <ProposalEditorModal 
+        open={proposalEditorOpen} 
+        onOpenChange={setProposalEditorOpen} 
+        environments={environments} 
+        budgetId={id || ''}
+        onUpdateEnvironmentCover={async (envId: string, coverUrl: string) => {
       try {
         const {
           error
