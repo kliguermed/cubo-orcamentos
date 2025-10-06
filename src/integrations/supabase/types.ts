@@ -82,6 +82,44 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_environment_mappings: {
+        Row: {
+          asset_id: string
+          created_at: string
+          environment_name_pattern: string
+          id: string
+          priority: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          environment_name_pattern: string
+          id?: string
+          priority?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          environment_name_pattern?: string
+          id?: string
+          priority?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_environment_mappings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           categories: string[] | null
@@ -90,6 +128,7 @@ export type Database = {
           created_at: string
           height: number | null
           id: string
+          is_default: boolean | null
           mime_type: string
           tags: string[] | null
           updated_at: string
@@ -105,6 +144,7 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          is_default?: boolean | null
           mime_type: string
           tags?: string[] | null
           updated_at?: string
@@ -120,6 +160,7 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          is_default?: boolean | null
           mime_type?: string
           tags?: string[] | null
           updated_at?: string
@@ -382,6 +423,48 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      proposal_template_settings: {
+        Row: {
+          created_at: string
+          default_environment_asset_id: string | null
+          id: string
+          main_cover_asset_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_environment_asset_id?: string | null
+          id?: string
+          main_cover_asset_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_environment_asset_id?: string | null
+          id?: string
+          main_cover_asset_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_template_settings_default_environment_asset_id_fkey"
+            columns: ["default_environment_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_template_settings_main_cover_asset_id_fkey"
+            columns: ["main_cover_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
