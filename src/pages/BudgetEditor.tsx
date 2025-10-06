@@ -937,22 +937,20 @@ const BudgetEditor = () => {
                          setNewEnvName(name);
                        }}
                      />
-                     <Button onClick={addEnvironment} variant="outline" size={isMobile ? "sm" : "default"} className="w-full">
-                       <Plus className="h-4 w-4 mr-2" />
-                       Adicionar
-                     </Button>
-                   </div>
-                     <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
-                       {FEATURE_FLAGS.proposalImageLibrary && <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
-                           <ImageIcon className="h-4 w-4 mr-2" />
-                           {isMobile ? "Capas" : "Formatar Proposta"}
-                         </Button>}
-                       
-                     </div>
-                   </div>
-              </CardContent>
-            </Card>
-          </div>
+                      <Button onClick={addEnvironment} variant="outline" size={isMobile ? "sm" : "default"} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar
+                      </Button>
+                    </div>
+                    <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+                      {FEATURE_FLAGS.proposalImageLibrary && <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          {isMobile ? "Capas" : "Formatar Proposta"}
+                        </Button>}
+                    </div>
+               </CardContent>
+             </Card>
+           </div>
 
           {/* Right Column - Items */}
           <div className={isMobile ? "" : "lg:col-span-2"}>
@@ -1141,6 +1139,18 @@ const BudgetEditor = () => {
         });
       }
     }} />}
+
+      <CopyImageLibraryDialog
+        open={copyLibraryDialogOpen}
+        onOpenChange={setCopyLibraryDialogOpen}
+        templates={templates}
+        newEnvironmentName={pendingEnvName}
+        onConfirm={async (sourceTemplateId) => {
+          setCopyLibraryDialogOpen(false);
+          setNewEnvName(pendingEnvName);
+          setPendingEnvName('');
+        }}
+      />
     </div>;
 };
 export default BudgetEditor;
