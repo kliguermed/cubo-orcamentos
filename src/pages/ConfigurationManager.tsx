@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, Edit, Trash2, Image as ImageIcon, Save } from 'lucide-react';
+import { ProposalFormattingTab } from '@/components/ProposalFormatting/ProposalFormattingTab';
 
 interface Settings {
   id: string;
@@ -418,10 +419,11 @@ const ConfigurationManager: React.FC = () => {
 
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="calculation">Regras de Cálculo</TabsTrigger>
             <TabsTrigger value="environments">Ambientes</TabsTrigger>
             <TabsTrigger value="pages">Paginações</TabsTrigger>
+            <TabsTrigger value="formatting">Formatação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="calculation" className="space-y-6">
@@ -773,6 +775,10 @@ const ConfigurationManager: React.FC = () => {
                 </Button>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="formatting" className="space-y-6">
+            <ProposalFormattingTab />
           </TabsContent>
         </Tabs>
       </main>

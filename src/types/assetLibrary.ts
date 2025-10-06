@@ -12,6 +12,7 @@ export interface Asset {
   user_id: string;
   created_at: string;
   updated_at: string;
+  is_default?: boolean;
 }
 
 export interface Category {
@@ -38,4 +39,23 @@ export interface AssetChangeLog {
   changed_by?: string;
   changes?: Record<string, any>;
   created_at: string;
+}
+
+export interface ProposalTemplateSettings {
+  id: string;
+  user_id: string;
+  main_cover_asset_id?: string;
+  default_environment_asset_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssetEnvironmentMapping {
+  id: string;
+  user_id: string;
+  asset_id: string;
+  environment_name_pattern: string;
+  priority: number;
+  created_at: string;
+  updated_at: string;
 }

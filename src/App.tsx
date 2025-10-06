@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import BudgetEditor from "./pages/BudgetEditor";
 import ProposalPage from "./pages/ProposalPage";
 import ConfigurationManager from "./pages/ConfigurationManager";
+import ProposalPreview from "./pages/ProposalPreview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ConfigurationManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/proposal-preview"
+              element={
+                <ProtectedRoute>
+                  <ProposalPreview />
                 </ProtectedRoute>
               }
             />

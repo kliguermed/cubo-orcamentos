@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Image as ImageIcon, Upload } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Image as ImageIcon, Upload, Star } from 'lucide-react';
 import { useAssetLibrary } from '@/hooks/useAssetLibrary';
 import { Asset } from '@/types/assetLibrary';
 import { useDebounce } from '@/hooks/useDebounce';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ImagePickerProps {
   open: boolean;
@@ -21,6 +24,7 @@ const CATEGORIES = ['Cozinha', 'Sala', 'Quarto', 'Banheiro', 'Externa', 'Escrit�
 
 export const ImagePicker = ({ open, onOpenChange, onSelect, selectedAssetId }: ImagePickerProps) => {
   const { assets, loading, fetchAssets, uploadAsset } = useAssetLibrary();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -63,6 +67,52 @@ export const ImagePicker = ({ open, onOpenChange, onSelect, selectedAssetId }: I
     } finally {
       setUploading(false);
       event.target.value = '';
+    }
+  };
+
+  const handleToggleDefault = async (asset: Asset, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const newDefaultValue = !asset.is_default;
+
+      // Se está marcando como padrão, desmarcar todos os outros
+      if (newDefaultValue) {
+        await supabase
+          .from('assets')
+          .update({ is_default: false })
+          .eq('user_id', user.id);
+      }
+
+      // Atualizar o asset atual
+      const { error } = await supabase
+        .from('assets')
+        .update({ is_default: newDefaultValue })
+        .eq('id', asset.id);
+
+      if (error) throw error;
+
+      toast({
+        title: newDefaultValue ? 'Imagem padrão definida' : 'Marca de padrão removida',
+        description: newDefaultValue 
+          ? 'Esta imagem será usada como padrão para ambientes'
+          : 'Imagem não é mais a padrão'
+      });
+
+      // Recarregar assets
+      await fetchAssets({
+        search: debouncedSearch,
+        categories: selectedCategories
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message,
+        variant: 'destructive'
+      });
     }
   };
   
@@ -142,27 +192,45 @@ export const ImagePicker = ({ open, onOpenChange, onSelect, selectedAssetId }: I
           ) : (
             <div className="grid grid-cols-3 gap-4">
               {assets.map(asset => (
-                <button
-                  key={asset.id}
-                  onClick={() => handleSelect(asset)}
-                  className={`
-                    relative aspect-square rounded-lg overflow-hidden 
-                    border-2 transition-all hover:scale-105 hover:shadow-lg
-                    ${selectedAssetId === asset.id ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
-                  `}
-                >
-                  <img
-                    src={asset.url}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                  {selectedAssetId === asset.id && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <ImageIcon className="text-primary" size={32} />
+                <div key={asset.id} className="relative group">
+                  <button
+                    onClick={() => handleSelect(asset)}
+                    className={`
+                      w-full relative aspect-square rounded-lg overflow-hidden 
+                      border-2 transition-all hover:scale-105 hover:shadow-lg
+                      ${selectedAssetId === asset.id ? 'border-primary ring-2 ring-primary/20' : 'border-border'}
+                    `}
+                  >
+                    <img
+                      src={asset.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    {selectedAssetId === asset.id && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <ImageIcon className="text-primary" size={32} />
+                      </div>
+                    )}
+                    {asset.is_default && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1.5">
+                        <Star className="h-4 w-4 text-white fill-white" />
+                      </div>
+                    )}
+                  </button>
+                  <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div 
+                      className="flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded px-2 py-1.5 cursor-pointer"
+                      onClick={(e) => handleToggleDefault(asset, e)}
+                    >
+                      <Checkbox 
+                        checked={asset.is_default || false}
+                        className="border-white data-[state=checked]:bg-yellow-500"
+                      />
+                      <span className="text-xs text-white font-medium">Marcar como padrão</span>
                     </div>
-                  )}
-                </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}

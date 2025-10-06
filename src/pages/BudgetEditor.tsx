@@ -16,6 +16,7 @@ import { ItemModal } from "@/components/ItemModal";
 import { GlobalSummaryModal } from "@/components/GlobalSummaryModal";
 import { ProposalEditorModal } from "@/components/ProposalEditor/ProposalEditorModal";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
+import { applyEnvironmentCovers } from "@/utils/applyEnvironmentCovers";
 interface Budget {
   id: string;
   protocol_number: number;
@@ -164,6 +165,20 @@ const BudgetEditor = () => {
       if (error) throw error;
       setEnvironments(prev => [...prev, data]);
       setSelectedEnvId(data.id);
+      
+      // Aplicar capas automaticamente
+      if (id) {
+        await applyEnvironmentCovers(id);
+        // Recarregar ambientes para pegar as capas aplicadas
+        const { data: updatedEnvs } = await supabase
+          .from("environments")
+          .select("*")
+          .eq("budget_id", id);
+        if (updatedEnvs) {
+          setEnvironments(updatedEnvs);
+        }
+      }
+      
       toast({
         title: "Ambiente adicionado",
         description: "Novo ambiente criado com sucesso"
