@@ -38,6 +38,9 @@ interface EnvironmentModalProps {
   onOpenChange: (open: boolean) => void;
   onSave: (environment: Environment) => Promise<void>;
   onDelete?: (environmentId: string) => Promise<void>;
+  isStandardTemplate?: boolean;
+  templateName?: string;
+  templateDescription?: string;
 }
 
 export const EnvironmentModal = ({
@@ -46,9 +49,12 @@ export const EnvironmentModal = ({
   onOpenChange,
   onSave,
   onDelete,
+  isStandardTemplate = false,
+  templateName,
+  templateDescription,
 }: EnvironmentModalProps) => {
-  const [name, setName] = useState(environment?.name || "");
-  const [description, setDescription] = useState(environment?.description || "");
+  const [name, setName] = useState(templateName || environment?.name || "");
+  const [description, setDescription] = useState(templateDescription || environment?.description || "");
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile();
@@ -80,8 +86,8 @@ export const EnvironmentModal = ({
   // Reset form when dialog opens/closes
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen && environment) {
-      setName(environment.name);
-      setDescription(environment.description);
+      setName(templateName || environment.name);
+      setDescription(templateDescription || environment.description);
     }
     onOpenChange(newOpen);
   };
@@ -100,11 +106,18 @@ export const EnvironmentModal = ({
           <div className="space-y-4">
             <div>
               <Label htmlFor="env-name">Nome do ambiente *</Label>
+              {isStandardTemplate && (
+                <p className="text-xs text-muted-foreground mb-1">
+                  Este é um ambiente padrão. Para alterar o nome, edite nas Configurações.
+                </p>
+              )}
               <Input
                 id="env-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Sala de estar"
+                disabled={isStandardTemplate}
+                className={isStandardTemplate ? "bg-muted cursor-not-allowed" : ""}
               />
             </div>
             <div>

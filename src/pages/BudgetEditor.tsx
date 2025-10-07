@@ -85,6 +85,11 @@ const BudgetEditor = () => {
   const [addEnvDialogOpen, setAddEnvDialogOpen] = useState(false);
   const [copyLibraryDialogOpen, setCopyLibraryDialogOpen] = useState(false);
   const [pendingEnvName, setPendingEnvName] = useState('');
+  const [templateData, setTemplateData] = useState<{
+    isStandard: boolean;
+    name: string;
+    description: string;
+  } | null>(null);
   useEffect(() => {
     if (id) {
       fetchBudgetData();
@@ -631,21 +636,31 @@ const BudgetEditor = () => {
   };
   const saveEnvironment = async (environment: Environment) => {
     try {
+      const isStandard = templateData?.isStandard || false;
+      
+      // Se for template padrão, não atualizar o nome
+      const updateData: any = {
+        description: environment.description,
+      };
+      
+      // Só atualizar nome se NÃO for template padrão
+      if (!isStandard) {
+        updateData.name = environment.name;
+      }
+      
       const {
         error
-      } = await supabase.from("environments").update({
-        name: environment.name,
-        description: environment.description
-      }).eq("id", environment.id);
+      } = await supabase.from("environments").update(updateData).eq("id", environment.id);
       if (error) throw error;
+      
       setEnvironments(prev => prev.map(env => env.id === environment.id ? {
         ...env,
-        name: environment.name,
-        description: environment.description
+        ...updateData
       } : env));
+      
       toast({
         title: "Ambiente atualizado",
-        description: "Dados do ambiente salvos com sucesso"
+        description: "Alterações salvas com sucesso"
       });
     } catch (error: any) {
       toast({
@@ -710,6 +725,11 @@ const BudgetEditor = () => {
       // Wait for database trigger to process
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Refresh items list for selected environment
+      if (selectedEnvId) {
+        await fetchItems(selectedEnvId);
+      }
+
       // Refresh items to get calculated values
       await updateEnvironmentSubtotal();
       await fetchAllEnvironmentItems();
@@ -722,8 +742,50 @@ const BudgetEditor = () => {
       });
     }
   };
-  const openEnvironmentModal = (environment: Environment) => {
+  const openEnvironmentModal = async (environment: Environment) => {
     setEditingEnvironment(environment);
+    
+    // Se o ambiente tem template_id, buscar dados do template
+    if (environment.template_id) {
+      try {
+        const { data: template, error } = await supabase
+          .from('environment_templates')
+          .select('name, description')
+          .eq('id', environment.template_id)
+          .maybeSingle();
+        
+        if (!error && template) {
+          // Armazenar dados do template para passar ao modal
+          setTemplateData({
+            isStandard: true,
+            name: template.name,
+            description: template.description || ''
+          });
+        } else {
+          // Template não encontrado, tratar como temporário
+          setTemplateData({
+            isStandard: false,
+            name: environment.name,
+            description: environment.description || ''
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar template:', error);
+        setTemplateData({
+          isStandard: false,
+          name: environment.name,
+          description: environment.description || ''
+        });
+      }
+    } else {
+      // Ambiente temporário (sem template)
+      setTemplateData({
+        isStandard: false,
+        name: environment.name,
+        description: environment.description || ''
+      });
+    }
+    
     setEnvironmentModalOpen(true);
   };
   const openItemModal = (item?: Item) => {
@@ -1182,7 +1244,16 @@ const BudgetEditor = () => {
       </main>
 
       {/* Modals */}
-      <EnvironmentModal environment={editingEnvironment} open={environmentModalOpen} onOpenChange={setEnvironmentModalOpen} onSave={saveEnvironment} onDelete={deleteEnvironment} />
+      <EnvironmentModal 
+        environment={editingEnvironment} 
+        open={environmentModalOpen} 
+        onOpenChange={setEnvironmentModalOpen} 
+        onSave={saveEnvironment} 
+        onDelete={deleteEnvironment}
+        isStandardTemplate={templateData?.isStandard || false}
+        templateName={templateData?.name}
+        templateDescription={templateData?.description}
+      />
       
       <ItemModal item={editingItem} open={itemModalOpen} onOpenChange={setItemModalOpen} onSave={saveItem} environmentId={selectedEnvId || ""} settings={budget} />
 
