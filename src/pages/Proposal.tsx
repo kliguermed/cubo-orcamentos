@@ -84,10 +84,8 @@ const Proposal = () => {
         supabase.from("page_layouts").select("*").eq("user_id", budgetRes.data.user_id).single(),
       ]);
 
-      if (budgetRes.error) throw budgetRes.error;
       if (settingsRes.error) throw settingsRes.error;
 
-      setBudget(budgetRes.data as Budget);
       setEnvironments(envRes.data || []);
       setSettings(settingsRes.data);
       setPageLayouts(layoutsRes.data || null);
