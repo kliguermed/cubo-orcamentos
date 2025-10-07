@@ -68,6 +68,7 @@ const ProposalPage: React.FC = () => {
   const [budget, setBudget] = useState<Budget | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [pageLayouts, setPageLayouts] = useState<PageLayouts | null>(null);
+  const [mainCoverUrl, setMainCoverUrl] = useState<string | null>(null);
   useEffect(() => {
     if (id) {
       fetchProposalData();
@@ -112,6 +113,26 @@ const ProposalPage: React.FC = () => {
       } = await supabase.from('page_layouts').select('*').eq('user_id', budgetData?.user_id).single();
       if (layoutsError) throw layoutsError;
       setPageLayouts(layoutsData);
+
+      // Fetch main cover from proposal template settings
+      const { data: templateSettings } = await supabase
+        .from('proposal_template_settings')
+        .select('main_cover_asset_id')
+        .eq('user_id', budgetData.user_id)
+        .maybeSingle();
+
+      // If there's a main cover asset configured, fetch its URL
+      if (templateSettings?.main_cover_asset_id) {
+        const { data: assetData } = await supabase
+          .from('assets')
+          .select('url')
+          .eq('id', templateSettings.main_cover_asset_id)
+          .maybeSingle();
+        
+        if (assetData) {
+          setMainCoverUrl(assetData.url);
+        }
+      }
     } catch (error) {
       console.error('Error fetching proposal data:', error);
       toast({
@@ -239,7 +260,11 @@ const ProposalPage: React.FC = () => {
 
       {/* Main Cover Page */}
       <section className="min-h-screen flex flex-col items-center justify-center text-white relative print:page-break-after-always" style={{
-      backgroundImage: pageLayouts?.cover_background ? 'url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)' : 'none',
+      backgroundImage: mainCoverUrl 
+        ? `url(${mainCoverUrl})` 
+        : (pageLayouts?.cover_background ? 'url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)' : 'none'),
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
       backgroundColor: pageLayouts?.cover_background ? 'transparent' : '#000'
     }}>
         <div className="absolute inset-0 bg-black/40" />

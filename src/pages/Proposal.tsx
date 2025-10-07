@@ -63,6 +63,7 @@ const Proposal = () => {
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pageLayouts, setPageLayouts] = useState<PageLayouts | null>(null);
+  const [mainCoverUrl, setMainCoverUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -89,6 +90,26 @@ const Proposal = () => {
       setEnvironments(envRes.data || []);
       setSettings(settingsRes.data);
       setPageLayouts(layoutsRes.data || null);
+
+      // Fetch main cover from proposal template settings
+      const { data: templateSettings } = await supabase
+        .from('proposal_template_settings')
+        .select('main_cover_asset_id')
+        .eq('user_id', budgetRes.data.user_id)
+        .maybeSingle();
+
+      // If there's a main cover asset configured, fetch its URL
+      if (templateSettings?.main_cover_asset_id) {
+        const { data: assetData } = await supabase
+          .from('assets')
+          .select('url')
+          .eq('id', templateSettings.main_cover_asset_id)
+          .maybeSingle();
+        
+        if (assetData) {
+          setMainCoverUrl(assetData.url);
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao carregar proposta",
@@ -220,7 +241,11 @@ const Proposal = () => {
           
           {/* Main Cover Page */}
           <section className="h-screen text-white flex flex-col justify-center items-center text-center relative bg-cover bg-center print:break-after-page" 
-                   style={{backgroundImage: 'url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)'}}>
+                   style={{
+                     backgroundImage: mainCoverUrl 
+                       ? `url(${mainCoverUrl})` 
+                       : 'url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)'
+                   }}>
             <div className="absolute inset-0 bg-black/40"></div>
             <div className="relative z-10">
               <img 
