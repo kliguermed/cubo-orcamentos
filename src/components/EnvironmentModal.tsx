@@ -53,7 +53,7 @@ export const EnvironmentModal = ({
   templateName,
   templateDescription,
 }: EnvironmentModalProps) => {
-  const [name, setName] = useState(templateName || environment?.name || "");
+  const [name, setName] = useState(environment?.name || "");
   const [description, setDescription] = useState(templateDescription || environment?.description || "");
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -86,7 +86,7 @@ export const EnvironmentModal = ({
   // Reset form when dialog opens/closes
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen && environment) {
-      setName(templateName || environment.name);
+      setName(environment.name);
       setDescription(templateDescription || environment.description);
     }
     onOpenChange(newOpen);
