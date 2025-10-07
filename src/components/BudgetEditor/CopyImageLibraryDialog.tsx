@@ -24,7 +24,7 @@ interface CopyImageLibraryDialogProps {
   onOpenChange: (open: boolean) => void;
   templates: EnvironmentTemplate[];
   newEnvironmentName: string;
-  onConfirm: (sourceTemplateId: string | null) => void;
+  onConfirm: (sourceTemplateId: string | null) => Promise<void>;
 }
 
 export function CopyImageLibraryDialog({
@@ -36,8 +36,8 @@ export function CopyImageLibraryDialog({
 }: CopyImageLibraryDialogProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
 
-  const handleConfirm = () => {
-    onConfirm(selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : null);
+  const handleConfirm = async () => {
+    await onConfirm(selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : null);
     setSelectedTemplateId('none');
   };
 

@@ -15,7 +15,7 @@ import { EnvironmentModal } from "@/components/EnvironmentModal";
 import { ItemModal } from "@/components/ItemModal";
 import { GlobalSummaryModal } from "@/components/GlobalSummaryModal";
 import { ProposalEditorModal } from "@/components/ProposalEditor/ProposalEditorModal";
-import { EnvironmentSelector } from "@/components/BudgetEditor/EnvironmentSelector";
+import { AddEnvironmentDialog } from "@/components/BudgetEditor/AddEnvironmentDialog";
 import { CopyImageLibraryDialog } from "@/components/BudgetEditor/CopyImageLibraryDialog";
 import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import { applyEnvironmentCovers } from "@/utils/applyEnvironmentCovers";
@@ -82,7 +82,7 @@ const BudgetEditor = () => {
   const [calculationRulesExpanded, setCalculationRulesExpanded] = useState(false);
   const [proposalEditorOpen, setProposalEditorOpen] = useState(false);
   const [templates, setTemplates] = useState<EnvironmentTemplate[]>([]);
-  const [newEnvName, setNewEnvName] = useState('');
+  const [addEnvDialogOpen, setAddEnvDialogOpen] = useState(false);
   const [copyLibraryDialogOpen, setCopyLibraryDialogOpen] = useState(false);
   const [pendingEnvName, setPendingEnvName] = useState('');
   useEffect(() => {
@@ -162,24 +162,42 @@ const BudgetEditor = () => {
       });
     }
   };
-  const addEnvironment = async () => {
+  const addEnvironmentFromTemplate = async (templateName: string, templateId?: string) => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from("environments").insert([{
-        budget_id: id,
-        name: "Novo Ambiente",
-        description: ""
-      }]).select().single();
+      // 1. Buscar o template se tiver ID
+      let coverUrl: string | undefined;
+      if (templateId) {
+        const { data: template } = await supabase
+          .from('environment_templates')
+          .select('default_image_url')
+          .eq('id', templateId)
+          .maybeSingle();
+        
+        coverUrl = template?.default_image_url || undefined;
+      }
+
+      // 2. Criar ambiente no orçamento
+      const { data, error } = await supabase
+        .from('environments')
+        .insert([{
+          budget_id: id,
+          name: templateName,
+          template_id: templateId || null,
+          cover_image_url: coverUrl || null,
+        }])
+        .select()
+        .single();
+
       if (error) throw error;
+
+      // 3. Atualizar estado local
       setEnvironments(prev => [...prev, data]);
       setSelectedEnvId(data.id);
       
-      // Aplicar capas automaticamente
+      // 4. Aplicar capas automaticamente
       if (id) {
         await applyEnvironmentCovers(id);
-        // Recarregar ambientes para pegar as capas aplicadas
+        // Recarregar ambientes
         const { data: updatedEnvs } = await supabase
           .from("environments")
           .select("*")
@@ -188,11 +206,13 @@ const BudgetEditor = () => {
           setEnvironments(updatedEnvs);
         }
       }
-      
+
       toast({
         title: "Ambiente adicionado",
-        description: "Novo ambiente criado com sucesso"
+        description: `${templateName} foi adicionado ao orçamento`
       });
+
+      setAddEnvDialogOpen(false);
     } catch (error: any) {
       toast({
         title: "Erro ao adicionar ambiente",
@@ -200,6 +220,73 @@ const BudgetEditor = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleCreateStandardEnvironment = async (name: string) => {
+    setPendingEnvName(name);
+    setCopyLibraryDialogOpen(true);
+  };
+
+  const handleConfirmStandardEnvironment = async (sourceTemplateId: string | null) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // 1. Copiar biblioteca de imagens se necessário
+      let imageLibrary: any[] = [];
+      if (sourceTemplateId) {
+        const { data: sourceTemplate } = await supabase
+          .from('environment_templates')
+          .select('image_library')
+          .eq('id', sourceTemplateId)
+          .maybeSingle();
+        
+        if (sourceTemplate?.image_library) {
+          imageLibrary = JSON.parse(JSON.stringify(sourceTemplate.image_library));
+        }
+      }
+
+      // 2. Criar novo template na tabela environment_templates
+      const { data: newTemplate, error: templateError } = await supabase
+        .from('environment_templates')
+        .insert([{
+          user_id: user.id,
+          name: pendingEnvName,
+          description: '',
+          image_library: imageLibrary,
+          default_image_url: imageLibrary.find(img => img.is_default)?.url || null,
+        }])
+        .select()
+        .single();
+
+      if (templateError) throw templateError;
+
+      // 3. Recarregar templates
+      const updatedTemplates = await loadTemplates();
+      setTemplates(updatedTemplates);
+
+      // 4. Adicionar ao orçamento
+      await addEnvironmentFromTemplate(pendingEnvName, newTemplate.id);
+
+      setCopyLibraryDialogOpen(false);
+      setPendingEnvName('');
+
+      toast({
+        title: "Ambiente padrão criado",
+        description: `${pendingEnvName} foi adicionado aos seus templates e ao orçamento`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar ambiente padrão",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateTemporaryEnvironment = async (name: string) => {
+    // Ambiente temporário: adiciona ao orçamento SEM criar template
+    await addEnvironmentFromTemplate(name);
   };
   const addItem = async () => {
     if (!selectedEnvId) return;
@@ -924,24 +1011,15 @@ const BudgetEditor = () => {
                       </div>
                     </div>}
                   
-                   <div className={isMobile ? "space-y-2" : "space-y-4"}>
-                     <EnvironmentSelector
-                       templates={templates}
-                       value={newEnvName}
-                       onChange={setNewEnvName}
-                       onCreateStandard={(name) => {
-                         setPendingEnvName(name);
-                         setCopyLibraryDialogOpen(true);
-                       }}
-                       onCreateTemporary={(name) => {
-                         setNewEnvName(name);
-                       }}
-                     />
-                      <Button onClick={addEnvironment} variant="outline" size={isMobile ? "sm" : "default"} className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar
-                      </Button>
-                    </div>
+                   <Button 
+                     onClick={() => setAddEnvDialogOpen(true)} 
+                     variant="outline" 
+                     size={isMobile ? "sm" : "default"} 
+                     className="w-full mb-4"
+                   >
+                     <Plus className="h-4 w-4 mr-2" />
+                     Adicionar Ambiente
+                   </Button>
                     <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
                       {FEATURE_FLAGS.proposalImageLibrary && <Button onClick={() => setProposalEditorOpen(true)} variant="secondary" size={isMobile ? "sm" : "default"} className={isMobile ? "w-full" : ""}>
                           <ImageIcon className="h-4 w-4 mr-2" />
@@ -1092,7 +1170,7 @@ const BudgetEditor = () => {
                     <p className="text-muted-foreground mb-4">
                       Escolha um ambiente na barra lateral para adicionar itens
                     </p>
-                    <Button onClick={addEnvironment}>
+                    <Button onClick={() => setAddEnvDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Criar primeiro ambiente
                     </Button>
@@ -1140,16 +1218,21 @@ const BudgetEditor = () => {
       }
     }} />}
 
+      <AddEnvironmentDialog
+        open={addEnvDialogOpen}
+        onOpenChange={setAddEnvDialogOpen}
+        templates={templates}
+        onAddEnvironment={addEnvironmentFromTemplate}
+        onCreateStandard={handleCreateStandardEnvironment}
+        onCreateTemporary={handleCreateTemporaryEnvironment}
+      />
+
       <CopyImageLibraryDialog
         open={copyLibraryDialogOpen}
         onOpenChange={setCopyLibraryDialogOpen}
         templates={templates}
         newEnvironmentName={pendingEnvName}
-        onConfirm={async (sourceTemplateId) => {
-          setCopyLibraryDialogOpen(false);
-          setNewEnvName(pendingEnvName);
-          setPendingEnvName('');
-        }}
+        onConfirm={handleConfirmStandardEnvironment}
       />
     </div>;
 };
