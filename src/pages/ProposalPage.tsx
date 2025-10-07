@@ -183,17 +183,15 @@ const ProposalPage: React.FC = () => {
       grandTotal
     };
   };
-
   const calculatePaymentOptions = (totalValue: number) => {
     // Opção 1: À vista com 5% de desconto
     const pixDiscount = totalValue * 0.05;
     const pixTotal = totalValue - pixDiscount;
-    
+
     // Opção 2: 50% entrada + 50% em 6x
     const downPayment = totalValue * 0.50;
     const remainingAmount = totalValue * 0.50;
     const installmentValue = remainingAmount / 6;
-    
     return {
       pixTotal,
       pixDiscount,
@@ -274,7 +272,7 @@ const ProposalPage: React.FC = () => {
           <section className="min-h-screen bg-white text-black p-8 print:page-break-after-always">
             <div className="max-w-4xl mx-auto">
               <header className="mb-8 text-center">
-                <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" alt="Logo Cubo" className="w-16 h-16 mx-auto mb-4" />
+                <img src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png" alt="Logo Cubo" className="w-14 h-14 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold">{environment.name}</h1>
               </header>
 
