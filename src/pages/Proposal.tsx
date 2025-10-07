@@ -85,10 +85,15 @@ const Proposal = () => {
       ]);
 
       if (settingsRes.error) throw settingsRes.error;
+      if (layoutsRes.error && layoutsRes.error.code !== "PGRST116") {
+        console.warn("Erro ao buscar page_layouts:", layoutsRes.error);
+      }
 
       setEnvironments(envRes.data || []);
       setSettings(settingsRes.data);
       setPageLayouts(layoutsRes.data || null);
+
+      console.log("Settings e Layouts carregados com sucesso");
 
       // Fetch main cover from proposal template settings
       const { data: templateSettings } = await supabase
@@ -96,6 +101,8 @@ const Proposal = () => {
         .select("main_cover_asset_id")
         .eq("user_id", budgetRes.data.user_id)
         .maybeSingle();
+      console.log("Template Settings:", templateSettings);
+      console.log("Main Cover Asset ID:", templateSettings?.main_cover_asset_id);
 
       // If there's a main cover asset configured, fetch its URL
       if (templateSettings?.main_cover_asset_id) {
@@ -107,8 +114,11 @@ const Proposal = () => {
 
         if (assetData) {
           setMainCoverUrl(assetData.url);
+          console.log("Asset Data:", assetData);
+          console.log("Main Cover URL setada:", assetData?.url);
         }
       }
+      console.log("Main Cover URL final no estado:", mainCoverUrl);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar proposta",
@@ -203,6 +213,7 @@ const Proposal = () => {
   }
 
   const totals = calculateTotals();
+  console.log("Renderizando com mainCoverUrl:", mainCoverUrl);
 
   return (
     <div className="min-h-screen bg-background">
@@ -243,8 +254,11 @@ const Proposal = () => {
             className="h-screen text-white flex flex-col justify-center items-center text-center relative bg-cover bg-center print:break-after-page"
             style={{
               backgroundImage: mainCoverUrl
-                ? `url(${mainCoverUrl})`
+                ? `url("${mainCoverUrl}")`
                 : "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
             }}
           >
             <div className="absolute inset-0 bg-black/40"></div>
