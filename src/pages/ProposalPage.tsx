@@ -664,10 +664,8 @@ const ProposalPage: React.FC = () => {
             <div className="text-sm text-center space-y-1">
               <p>
                 <strong>Cubo Casa Inteligente</strong>
-              </p>
               <p>📧 contato@cubocasainteligente.com.br</p>
-              <p>📱 (44) 98407-1331</p>
-              <p>🌐 www.cubocasainteligente.com.br</p>
+              <p>📱 (44) 98407-1331 - 🌐 www.cubocasainteligente.com.br</p>
             </div>
           </div>
 
