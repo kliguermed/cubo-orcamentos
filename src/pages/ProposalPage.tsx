@@ -271,7 +271,7 @@ const ProposalPage: React.FC = () => {
 
       {/* Main Cover Page */}
       <section
-        className="min-h-screen flex flex-col items-center justify-center text-white relative print:page-break-after-always"
+        className="min-h-screen flex flex-col items-center justify-center text-white relative"
         style={{
           backgroundImage: mainCoverUrl
             ? `url(${mainCoverUrl})`
@@ -324,7 +324,7 @@ const ProposalPage: React.FC = () => {
           {/* Environment Items Page */}
           <section className="min-h-screen bg-white text-black p-8 print:page-break-after-always">
             <div className="max-w-4xl mx-auto">
-              <header className="mb-8 text-center">
+              <header className="mb-8 text-center pt-12">
                 <img
                   src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png"
                   alt="Logo Cubo"
@@ -469,7 +469,7 @@ const ProposalPage: React.FC = () => {
             className="w-20 h-20 mx-auto mb-6"
           />
 
-          <div className="bg-white/10 backdrop-blur-sm p-8 rounded-lg mb-8">
+          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg mb-6">
             <h1 className="text-2xl font-bold mb-6">Detalhamento por Ambiente</h1>
 
             <div className="space-y-4 text-sm mb-6">
@@ -524,7 +524,7 @@ const ProposalPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg mb-8">
+          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg mb-6">
             <h2 className="text-xl font-semibold mb-4 text-center">💳 Condições de Pagamento</h2>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -659,13 +659,13 @@ const ProposalPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4 text-center">📞 Contato</h2>
+          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
+            <h2 className="text-lg font-semibold mb-2 text-center">📞 Contato</h2>
             <div className="text-sm text-center space-y-1">
-              <p>
-                <strong>Cubo Casa Inteligente</strong>
+              <p><strong>Cubo Casa Inteligente</strong></p>
               <p>📧 contato@cubocasainteligente.com.br</p>
-              <p>📱 (44) 98407-1331 - 🌐 www.cubocasainteligente.com.br</p>
+              <p>📱 (44) 98407-1331</p>
+              <p>🌐 www.cubocasainteligente.com.br</p>
             </div>
           </div>
 
@@ -697,10 +697,12 @@ const ProposalPage: React.FC = () => {
             }
             section {
               width: 100% !important;
-              height: 100vh !important;
+              min-height: 100vh !important;
+              height: auto !important;
               margin: 0 !important;
               padding: 8px !important;
               box-sizing: border-box !important;
+              page-break-inside: avoid !important;
             }
             @page {
               size: A4;
