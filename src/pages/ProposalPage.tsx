@@ -322,7 +322,7 @@ const ProposalPage: React.FC = () => {
           </section>
 
           {/* Environment Items Page */}
-          <section className="min-h-screen bg-white text-black p-8 print:page-break-after-always">
+          <section className="min-h-screen bg-white text-black p-8 print:p-4 print:page-break-after-always">
             <div className="max-w-4xl mx-auto">
               <header className="mb-8 text-center pt-12">
                 <img
@@ -344,7 +344,7 @@ const ProposalPage: React.FC = () => {
                 <h2 className="text-lg font-semibold mb-4">Itens Inclusos</h2>
                 <div className="space-y-3">
                   {environment.items.map((item) => (
-                    <div key={item.id} className="bg-gray-50 p-4 rounded-lg border">
+                    <div key={item.id} className="bg-gray-50 p-4 rounded-lg border print:p-2">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">{item.name}</h3>
@@ -363,7 +363,7 @@ const ProposalPage: React.FC = () => {
               </div>
 
               {/* Environment Totals */}
-              <div className="bg-gray-100 p-6 rounded-lg">
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -453,7 +453,7 @@ const ProposalPage: React.FC = () => {
 
       {/* Closing Page */}
       <section
-        className="min-h-screen flex flex-col justify-center text-white p-8"
+        className="min-h-screen flex flex-col justify-center text-white p-8 print:page-break-after-avoid"
         style={{
           backgroundImage: pageLayouts?.closing_background
             ? "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)"
@@ -697,16 +697,36 @@ const ProposalPage: React.FC = () => {
             }
             section {
               width: 100% !important;
-              min-height: 100vh !important;
-              height: auto !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
               margin: 0 !important;
-              padding: 8px !important;
+              padding: 16px !important;
               box-sizing: border-box !important;
+              page-break-after: always !important;
               page-break-inside: avoid !important;
+              overflow: hidden !important;
+            }
+            section:last-of-type {
+              page-break-after: avoid !important;
+            }
+            .space-y-3 {
+              gap: 6px !important;
+            }
+            .mb-8, .mb-6 {
+              margin-bottom: 8px !important;
+            }
+            .p-6 {
+              padding: 12px !important;
             }
             @page {
-              size: A4;
-              margin: 0;
+              size: A4 portrait;
+              margin: 0mm;
+            }
+            @page :first {
+              margin-top: 0mm;
+            }
+            @page :last {
+              margin-bottom: 0mm;
             }
           }
         `,
