@@ -283,7 +283,7 @@ const ProposalPage: React.FC = () => {
           backgroundColor: pageLayouts?.cover_background ? "transparent" : "#000",
         }}
       >
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/40 print:hidden" />
         <div className="relative z-10 text-center px-4">
           <img
             src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
@@ -310,7 +310,7 @@ const ProposalPage: React.FC = () => {
               backgroundPosition: "center",
             }}
           >
-            <div className="absolute inset-0 bg-black/50" />
+            <div className="absolute inset-0 bg-black/50 print:hidden" />
             <div className="relative z-10 text-center px-4">
               <img
                 src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
@@ -461,15 +461,15 @@ const ProposalPage: React.FC = () => {
           backgroundColor: pageLayouts?.closing_background ? "transparent" : "#000",
         }}
       >
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/40 print:hidden" />
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <img
             src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
             alt="Logo Cubo"
-            className="w-20 h-20 mx-auto mb-6"
+            className="w-16 h-16 mx-auto mb-4 print:w-12 print:h-12 print:mb-2"
           />
 
-          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg mb-6">
+          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg mb-4 print:p-3 print:mb-3">
             <h1 className="text-2xl font-bold mb-6">Detalhamento por Ambiente</h1>
 
             <div className="space-y-4 text-sm mb-6">
@@ -659,7 +659,7 @@ const ProposalPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
+          <div className="bg-white/10 backdrop-blur-sm p-3 rounded-lg print:p-2">
             <h2 className="text-lg font-semibold mb-2 text-center">📞 Contato</h2>
             <div className="text-sm text-center space-y-1">
               <p><strong>Cubo Casa Inteligente</strong></p>
@@ -700,7 +700,7 @@ const ProposalPage: React.FC = () => {
               height: 100vh !important;
               max-height: 100vh !important;
               margin: 0 !important;
-              padding: 16px !important;
+              padding: 0 !important;
               box-sizing: border-box !important;
               page-break-after: always !important;
               page-break-inside: avoid !important;
@@ -708,6 +708,9 @@ const ProposalPage: React.FC = () => {
             }
             section:last-of-type {
               page-break-after: avoid !important;
+              height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
             }
             .space-y-3 {
               gap: 6px !important;
@@ -717,6 +720,12 @@ const ProposalPage: React.FC = () => {
             }
             .p-6 {
               padding: 12px !important;
+            }
+            .backdrop-blur-sm {
+              backdrop-filter: none !important;
+            }
+            .rounded-lg {
+              border-radius: 4px !important;
             }
             @page {
               size: A4 portrait;
