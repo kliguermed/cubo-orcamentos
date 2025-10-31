@@ -448,9 +448,15 @@ const ProposalPage: React.FC = () => {
 
       {/* Project Summary Page */}
       <section
-        className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8 print:page-break-after-always"
+        className="min-h-screen flex flex-col justify-center text-white p-8 print:page-break-after-always relative"
+        style={{
+          backgroundImage: "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+        <div className="absolute inset-0 bg-black/40 print:hidden" />
+        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8">
           <img
             src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
             alt="Logo Cubo"
@@ -462,14 +468,38 @@ const ProposalPage: React.FC = () => {
           {/* Resumo por Ambiente */}
           <div className="space-y-4">
             {environments.map((env) => {
-              const envTotal =
-                env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0) +
-                calculateEnvironmentLabor(env);
+              const itemsTotal = env.items.reduce(
+                (sum, item) => sum + (item.subtotal || item.sale_price * item.quantity),
+                0
+              );
+              const laborTotal = calculateEnvironmentLabor(env);
+              const envSubtotal = itemsTotal + laborTotal;
+
               return (
-                <div key={env.id} className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium">{env.name}</span>
-                    <span className="text-xl font-bold">{formatCurrency(envTotal)}</span>
+                <div key={env.id} className="bg-white/10 backdrop-blur-sm p-6 rounded-lg space-y-3">
+                  <h3 className="text-xl font-bold text-center mb-4 border-b border-white/20 pb-2">
+                    {env.name}
+                  </h3>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm opacity-80">Itens:</span>
+                      <span className="font-medium">{formatCurrency(itemsTotal)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm opacity-80">Mão de Obra:</span>
+                      <span className="font-medium">{formatCurrency(laborTotal)}</span>
+                    </div>
+
+                    <div className="border-t border-white/30 pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold">Subtotal:</span>
+                        <span className="text-xl font-bold text-green-400">
+                          {formatCurrency(envSubtotal)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -499,17 +529,14 @@ const ProposalPage: React.FC = () => {
 
       {/* Payment Conditions & Contact Page */}
       <section
-        className="min-h-screen flex flex-col justify-center text-white p-8"
+        className="min-h-screen flex flex-col justify-center text-white p-8 relative"
         style={{
-          // Remova ou defina como "none" para não carregar a imagem:
-          backgroundImage: "none", 
+          backgroundImage: "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          // Defina o background principal como preto:
-          backgroundColor: "#000", 
         }}
       >
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/40 print:hidden" />
 
         <div className="relative z-10 max-w-4xl mx-auto">
           <img
