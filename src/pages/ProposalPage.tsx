@@ -697,6 +697,7 @@ const ProposalPage: React.FC = () => {
             }
             section {
               width: 100% !important;
+              min-height: 100vh !important;
               height: 100vh !important;
               max-height: 100vh !important;
               margin: 0 !important;
@@ -709,8 +710,19 @@ const ProposalPage: React.FC = () => {
             section:last-of-type {
               page-break-after: avoid !important;
               height: auto !important;
+              min-height: 100vh !important;
               max-height: none !important;
               overflow: visible !important;
+              padding: 16px !important;
+            }
+            section:last-of-type .space-y-4 {
+              gap: 8px !important;
+            }
+            section:last-of-type .mb-6 {
+              margin-bottom: 12px !important;
+            }
+            section:last-of-type .text-2xl {
+              font-size: 1.25rem !important;
             }
             .space-y-3 {
               gap: 6px !important;
