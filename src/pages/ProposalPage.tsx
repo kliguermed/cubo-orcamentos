@@ -297,171 +297,106 @@ const ProposalPage: React.FC = () => {
       </section>
 
       {/* Environment Pages */}
-      {environments.map((environment) => {
-        const envTotal = environment.items.reduce(
-          (sum, item) => sum + (item.subtotal || item.sale_price * item.quantity),
-          0,
-        ) + calculateEnvironmentLabor(environment);
-        const envPaymentOptions = calculatePaymentOptions(envTotal);
+      {environments.map((environment) => (
+        <React.Fragment key={environment.id}>
+          {/* Environment Cover Page */}
+          <section
+            className="min-h-screen flex flex-col items-center justify-center text-white relative print:page-break-after-always"
+            style={{
+              backgroundImage: environment.cover_image_url
+                ? `url(${environment.cover_image_url})`
+                : "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="absolute inset-0 bg-black/40 print:hidden" />
+            <div className="relative z-10 text-center px-4">
+              <img
+                src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
+                alt="Logo Cubo"
+                className="w-24 h-24 mx-auto mb-6"
+              />
+              <h1 className="text-4xl font-bold mb-4">{environment.name}</h1>
+              {environment.description && (
+                <p className="text-xl mt-4 max-w-2xl mx-auto opacity-90">{environment.description}</p>
+              )}
+            </div>
+          </section>
 
-        return (
-          <React.Fragment key={environment.id}>
-            {/* Unified Environment Cover + Details */}
-            <section
-              className="min-h-screen relative text-white print:page-break-after-always"
-              style={{
-                backgroundImage: environment.cover_image_url
-                  ? `url(${environment.cover_image_url})`
-                  : "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              <div className="absolute inset-0 bg-black/40" />
-              
-              <div className="relative z-10 p-8">
-                {/* Header com logo e título */}
-                <header className="text-white text-center mb-6">
-                  <img
-                    src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
-                    alt="Logo Cubo"
-                    className="w-16 h-16 mx-auto mb-3"
-                  />
-                  <h1 className="text-3xl font-bold">{environment.name}</h1>
-                </header>
-                
-                {/* Card branco com itens */}
-                <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 max-w-4xl mx-auto text-black">
-                  {environment.description && (
-                    <div className="mb-6">
-                      <h2 className="text-lg font-semibold mb-2">Descrição do Ambiente</h2>
-                      <p className="text-gray-700 leading-relaxed">{environment.description}</p>
+          {/* Environment Details Page */}
+          <section className="min-h-screen bg-white p-8 text-black print:page-break-after-always">
+            <header className="text-center mb-8">
+              <img
+                src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png"
+                alt="Logo Cubo"
+                className="w-16 h-16 mx-auto mb-4"
+              />
+              <h2 className="text-2xl font-bold text-gray-900">{environment.name} - Detalhamento</h2>
+            </header>
+
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Items List */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Itens Inclusos</h3>
+                {environment.items.map((item) => (
+                  <div key={item.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{item.name}</h4>
+                        <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">{formatCurrency(item.sale_price)}</p>
+                        <p className="text-sm text-gray-600">
+                          Subtotal: {formatCurrency(item.subtotal || item.sale_price * item.quantity)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Environment Summary */}
+              <div className="bg-gray-100 p-6 rounded-lg border border-gray-300">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo do Ambiente</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-gray-700">
+                    <span>Subtotal dos Itens:</span>
+                    <span className="font-medium">
+                      {formatCurrency(
+                        environment.items.reduce(
+                          (sum, item) => sum + (item.subtotal || item.sale_price * item.quantity),
+                          0,
+                        ),
+                      )}
+                    </span>
+                  </div>
+                  {budget && (
+                    <div className="flex justify-between text-gray-700">
+                      <span>Mão de Obra:</span>
+                      <span className="font-medium">{formatCurrency(calculateEnvironmentLabor(environment))}</span>
                     </div>
                   )}
-
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-4">Itens Inclusos</h2>
-                    <div className="space-y-3">
-                      {environment.items.map((item) => (
-                        <div key={item.id} className="bg-gray-50 p-4 rounded-lg border">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">{item.name}</h3>
-                              <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold">{formatCurrency(item.sale_price)}</p>
-                              <p className="text-sm text-gray-600">
-                                Subtotal: {formatCurrency(item.subtotal || item.sale_price * item.quantity)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Environment Totals */}
-                  <div className="bg-white p-6 rounded-lg border border-gray-200">
-                    <h3 className="text-lg font-semibold mb-4">Resumo do Ambiente</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Subtotal dos Itens:</span>
-                        <span className="font-medium">
-                          {formatCurrency(
-                            environment.items.reduce(
-                              (sum, item) => sum + (item.subtotal || item.sale_price * item.quantity),
-                              0,
-                            ),
-                          )}
-                        </span>
-                      </div>
-                      {budget && (
-                        <div className="flex justify-between">
-                          <span>Mão de Obra:</span>
-                          <span className="font-medium">{formatCurrency(calculateEnvironmentLabor(environment))}</span>
-                        </div>
-                      )}
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between text-lg font-bold">
-                          <span>Total do Ambiente:</span>
-                          <span>{formatCurrency(envTotal)}</span>
-                        </div>
-                      </div>
+                  <div className="border-t border-gray-400 pt-2 mt-2">
+                    <div className="flex justify-between text-lg font-bold text-gray-900">
+                      <span>Total do Ambiente:</span>
+                      <span>
+                        {formatCurrency(
+                          environment.items.reduce(
+                            (sum, item) => sum + (item.subtotal || item.sale_price * item.quantity),
+                            0,
+                          ) + calculateEnvironmentLabor(environment),
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-            </section>
-
-            {/* Environment Payment Conditions Page */}
-            <section className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8 print:page-break-after-always">
-              <div className="max-w-4xl mx-auto">
-                <header className="text-center mb-8">
-                  <img
-                    src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
-                    alt="Logo Cubo"
-                    className="w-14 h-14 mx-auto mb-4"
-                  />
-                  <h1 className="text-2xl font-bold mb-2">{environment.name}</h1>
-                  <h2 className="text-xl">Condições de Pagamento</h2>
-                </header>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Card PIX */}
-                  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border-2 border-green-400/50">
-                    <h3 className="text-xl font-semibold mb-4 text-green-400">1️⃣ À Vista no PIX</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span>Valor original:</span>
-                        <span>{formatCurrency(envTotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Desconto de 5%:</span>
-                        <span className="text-red-400">-{formatCurrency(envPaymentOptions.pixDiscount)}</span>
-                      </div>
-                      <div className="border-t border-white/20 pt-3 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-lg">Valor Total:</span>
-                          <span className="text-2xl font-bold text-green-400">
-                            {formatCurrency(envPaymentOptions.pixTotal)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Cartão */}
-                  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border-2 border-blue-400/50">
-                    <h3 className="text-xl font-semibold mb-4 text-blue-400">2️⃣ Parcelado no Cartão</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span>Entrada (50%):</span>
-                        <span className="font-semibold">{formatCurrency(envPaymentOptions.downPayment)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Saldo restante:</span>
-                        <span>{formatCurrency(envPaymentOptions.remainingAmount)}</span>
-                      </div>
-                      <div className="border-t border-white/20 pt-3 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-lg">6 parcelas de:</span>
-                          <span className="text-2xl font-bold text-blue-400">
-                            {formatCurrency(envPaymentOptions.installmentValue)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs opacity-75 mt-2 text-center">
-                        Total: {formatCurrency(envTotal)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </React.Fragment>
-        );
-      })}
+            </div>
+          </section>
+        </React.Fragment>
+      ))}
 
       {/* Warranty Page */}
       <section
@@ -511,31 +446,40 @@ const ProposalPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Final Summary Page */}
+      {/* Project Summary Page */}
       <section
-        className="min-h-screen flex flex-col justify-center text-white relative p-8"
-        style={{
-          backgroundImage: pageLayouts?.closing_background
-            ? "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)"
-            : "none",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: pageLayouts?.closing_background ? "transparent" : "#000",
-        }}
+        className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8 print:page-break-after-always"
       >
-        <div className="absolute inset-0 bg-black/40" />
-        
-        <div className="relative z-10 max-w-3xl mx-auto text-center space-y-8">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
           <img
             src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
             alt="Logo Cubo"
             className="w-20 h-20 mx-auto"
           />
-          
-          {/* Resumo Total */}
-          <div className="bg-white/10 backdrop-blur-sm p-8 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Resumo do Projeto</h2>
-            <div className="text-4xl font-bold text-green-400">
+
+          <h1 className="text-3xl font-bold">Resumo do Projeto</h1>
+
+          {/* Resumo por Ambiente */}
+          <div className="space-y-4">
+            {environments.map((env) => {
+              const envTotal =
+                env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0) +
+                calculateEnvironmentLabor(env);
+              return (
+                <div key={env.id} className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-medium">{env.name}</span>
+                    <span className="text-xl font-bold">{formatCurrency(envTotal)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Total Geral */}
+          <div className="bg-white/20 backdrop-blur-sm p-8 rounded-lg">
+            <h2 className="text-xl mb-2">Valor Total do Projeto</h2>
+            <div className="text-5xl font-bold text-green-400">
               {formatCurrency(
                 environments.reduce(
                   (sum, env) =>
@@ -549,27 +493,118 @@ const ProposalPage: React.FC = () => {
                 ),
               )}
             </div>
-            <p className="text-sm mt-2 opacity-75">Valor total incluindo todos os ambientes</p>
           </div>
-          
-          {/* Contato */}
-          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg">
+        </div>
+      </section>
+
+      {/* Payment Conditions & Contact Page */}
+      <section
+        className="min-h-screen flex flex-col justify-center text-white p-8"
+        style={{
+          backgroundImage: pageLayouts?.closing_background
+            ? "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)"
+            : "none",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundColor: pageLayouts?.closing_background ? "transparent" : "#000",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40" />
+
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <img
+            src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
+            alt="Logo Cubo"
+            className="w-16 h-16 mx-auto mb-8"
+          />
+
+          <h1 className="text-2xl font-bold text-center mb-8">Condições de Pagamento</h1>
+
+          {/* Cards PIX e Cartão */}
+          <div className="grid md:grid-cols-2 gap-6 mb-12">
+            {(() => {
+              const totalGeral = environments.reduce(
+                (sum, env) =>
+                  sum +
+                  env.items.reduce((itemSum, item) => itemSum + (item.subtotal || item.sale_price * item.quantity), 0) +
+                  calculateEnvironmentLabor(env),
+                0,
+              );
+              const paymentOptions = calculatePaymentOptions(totalGeral);
+
+              return (
+                <>
+                  {/* Card PIX */}
+                  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border-2 border-green-400/50">
+                    <h3 className="text-xl font-semibold mb-4 text-green-400">1️⃣ À Vista no PIX</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span>Valor original:</span>
+                        <span>{formatCurrency(totalGeral)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Desconto de 5%:</span>
+                        <span className="text-red-400">-{formatCurrency(paymentOptions.pixDiscount)}</span>
+                      </div>
+                      <div className="border-t border-white/20 pt-3 mt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-lg">Valor Total:</span>
+                          <span className="text-2xl font-bold text-green-400">
+                            {formatCurrency(paymentOptions.pixTotal)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Cartão */}
+                  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border-2 border-blue-400/50">
+                    <h3 className="text-xl font-semibold mb-4 text-blue-400">2️⃣ Parcelado no Cartão</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span>Entrada (50%):</span>
+                        <span className="font-semibold">{formatCurrency(paymentOptions.downPayment)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Saldo restante:</span>
+                        <span>{formatCurrency(paymentOptions.remainingAmount)}</span>
+                      </div>
+                      <div className="border-t border-white/20 pt-3 mt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-lg">6 parcelas de:</span>
+                          <span className="text-2xl font-bold text-blue-400">
+                            {formatCurrency(paymentOptions.installmentValue)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs opacity-75 mt-2 text-center">
+                        Total: {formatCurrency(totalGeral)}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Informações de Contato */}
+          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg text-center mb-8">
             <h2 className="text-xl font-semibold mb-4">📞 Entre em Contato</h2>
             <div className="space-y-2">
-              <p className="text-lg"><strong>Cubo Casa Inteligente</strong></p>
+              <p className="text-lg">
+                <strong>Cubo Casa Inteligente</strong>
+              </p>
               <p>📧 contato@cubocasainteligente.com.br</p>
               <p>📱 (44) 98407-1331</p>
               <p>🌐 www.cubocasainteligente.com.br</p>
               <p className="text-sm opacity-75 mt-4">Umuarama - PR</p>
             </div>
           </div>
-          
-          {/* Mensagem final */}
-          <div className="text-center">
-            <p className="text-lg">
-              {pageLayouts?.closing_text || "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
-            </p>
-          </div>
+
+          {/* Mensagem de encerramento */}
+          <p className="text-center text-lg">
+            {pageLayouts?.closing_text || "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
+          </p>
         </div>
       </section>
 
