@@ -416,9 +416,9 @@ const ProposalPage: React.FC = () => {
           </header>
 
           <div className="prose prose-lg max-w-none">
-            <div className="bg-gray-50 p-6 rounded-lg mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">🛡️ Garantia</h2>
-              <p className="text-gray-800">
+            <div className="bg-blue-50 p-6 rounded-lg mb-6">
+              <h2 className="text-lg font-semibold text-blue-900 mb-3">🛡️ Garantia</h2>
+              <p className="text-blue-800">
                 {pageLayouts?.warranty_text ||
                   "Garantia de 1 ano para equipamentos e serviços executados pela Cubo Automação, " +
                     "conforme termos e condições estabelecidos em contrato."}
@@ -448,28 +448,52 @@ const ProposalPage: React.FC = () => {
 
       {/* Project Summary Page */}
       <section
-        className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8 print:page-break-after-always"
+        className="min-h-screen flex flex-col justify-center text-gray-900 p-8 print:page-break-after-always relative bg-white"
       >
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <img
-            src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
+            src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png"
             alt="Logo Cubo"
             className="w-20 h-20 mx-auto"
           />
 
-          <h1 className="text-3xl font-bold">Resumo do Projeto</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Resumo do Projeto</h1>
 
           {/* Resumo por Ambiente */}
           <div className="space-y-4">
             {environments.map((env) => {
-              const envTotal =
-                env.items.reduce((sum, item) => sum + (item.subtotal || item.sale_price * item.quantity), 0) +
-                calculateEnvironmentLabor(env);
+              const itemsTotal = env.items.reduce(
+                (sum, item) => sum + (item.subtotal || item.sale_price * item.quantity),
+                0
+              );
+              const laborTotal = calculateEnvironmentLabor(env);
+              const envSubtotal = itemsTotal + laborTotal;
+
               return (
-                <div key={env.id} className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium">{env.name}</span>
-                    <span className="text-xl font-bold">{formatCurrency(envTotal)}</span>
+                <div key={env.id} className="bg-gray-50 border border-gray-200 p-6 rounded-lg space-y-3">
+                  <h3 className="text-xl font-bold text-center mb-4 border-b border-gray-300 pb-2 text-gray-900">
+                    {env.name}
+                  </h3>
+
+                  <div className="space-y-2 text-gray-700">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Itens:</span>
+                      <span className="font-medium">{formatCurrency(itemsTotal)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Mão de Obra:</span>
+                      <span className="font-medium">{formatCurrency(laborTotal)}</span>
+                    </div>
+
+                    <div className="border-t border-gray-300 pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-gray-900">Subtotal:</span>
+                        <span className="text-xl font-bold text-blue-600">
+                          {formatCurrency(envSubtotal)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -477,9 +501,9 @@ const ProposalPage: React.FC = () => {
           </div>
 
           {/* Total Geral */}
-          <div className="bg-white/20 backdrop-blur-sm p-8 rounded-lg">
-            <h2 className="text-xl mb-2">Valor Total do Projeto</h2>
-            <div className="text-5xl font-bold text-gray-400">
+          <div className="bg-blue-50 border-2 border-blue-200 p-8 rounded-lg">
+            <h2 className="text-xl mb-2 text-gray-900">Valor Total do Projeto</h2>
+            <div className="text-5xl font-bold text-blue-600">
               {formatCurrency(
                 environments.reduce(
                   (sum, env) =>
@@ -499,26 +523,16 @@ const ProposalPage: React.FC = () => {
 
       {/* Payment Conditions & Contact Page */}
       <section
-        className="min-h-screen flex flex-col justify-center text-white p-8"
-        style={{
-          backgroundImage: pageLayouts?.closing_background
-            ? "url(https://reugilk.s3.us-east-2.amazonaws.com/cubo/fundo-2.jpg)"
-            : "none",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: pageLayouts?.closing_background ? "transparent" : "#000",
-        }}
+        className="min-h-screen flex flex-col justify-center text-gray-900 p-8 relative bg-white"
       >
-        <div className="absolute inset-0 bg-black/40" />
-
-        <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <img
-            src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-B.png"
+            src="https://reugilk.s3.us-east-2.amazonaws.com/cubo/LOGO-CUBO/SIMBOLO-P.png"
             alt="Logo Cubo"
             className="w-16 h-16 mx-auto mb-8"
           />
 
-          <h1 className="text-2xl font-bold text-center mb-8">Condições de Pagamento</h1>
+          <h1 className="text-2xl font-bold text-center mb-8 text-gray-900">Condições de Pagamento</h1>
 
           {/* Cards PIX e Cartão */}
           <div className="grid md:grid-cols-2 gap-6 mb-12">
@@ -535,21 +549,21 @@ const ProposalPage: React.FC = () => {
               return (
                 <>
                   {/* Card PIX */}
-                  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border-2 border-gray-400/50">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-400">1️⃣ À Vista no PIX</h3>
-                    <div className="space-y-3">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-500">
+                    <h3 className="text-xl font-semibold mb-4 text-green-600">1️⃣ À Vista no PIX</h3>
+                    <div className="space-y-3 text-gray-900">
                       <div className="flex justify-between text-sm">
                         <span>Valor original:</span>
                         <span>{formatCurrency(totalGeral)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Desconto de 5%:</span>
-                        <span className="text-red-400">-{formatCurrency(paymentOptions.pixDiscount)}</span>
+                        <span className="text-red-600 font-semibold">-{formatCurrency(paymentOptions.pixDiscount)}</span>
                       </div>
-                      <div className="border-t border-white/20 pt-3 mt-3">
+                      <div className="border-t border-green-300 pt-3 mt-3">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-lg">Valor Total:</span>
-                          <span className="text-2xl font-bold text-gray-400">
+                          <span className="text-2xl font-bold text-green-600">
                             {formatCurrency(paymentOptions.pixTotal)}
                           </span>
                         </div>
@@ -558,9 +572,9 @@ const ProposalPage: React.FC = () => {
                   </div>
 
                   {/* Card Cartão */}
-                  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border-2 border-gray-400/50">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-400">2️⃣ Parcelado no Cartão</h3>
-                    <div className="space-y-3">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-500">
+                    <h3 className="text-xl font-semibold mb-4 text-blue-600">2️⃣ Parcelado no Cartão</h3>
+                    <div className="space-y-3 text-gray-900">
                       <div className="flex justify-between text-sm">
                         <span>Entrada (50%):</span>
                         <span className="font-semibold">{formatCurrency(paymentOptions.downPayment)}</span>
@@ -569,15 +583,15 @@ const ProposalPage: React.FC = () => {
                         <span>Saldo restante:</span>
                         <span>{formatCurrency(paymentOptions.remainingAmount)}</span>
                       </div>
-                      <div className="border-t border-white/20 pt-3 mt-3">
+                      <div className="border-t border-blue-300 pt-3 mt-3">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-lg">6 parcelas de:</span>
-                          <span className="text-2xl font-bold text-gray-400">
+                          <span className="text-2xl font-bold text-blue-600">
                             {formatCurrency(paymentOptions.installmentValue)}
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs opacity-75 mt-2 text-center">
+                      <div className="text-xs text-gray-600 mt-2 text-center">
                         Total: {formatCurrency(totalGeral)}
                       </div>
                     </div>
@@ -588,21 +602,21 @@ const ProposalPage: React.FC = () => {
           </div>
 
           {/* Informações de Contato */}
-          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg text-center mb-8">
-            <h2 className="text-xl font-semibold mb-4">📞 Entre em Contato</h2>
-            <div className="space-y-2">
-              <p className="text-lg">
+          <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-center mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">📞 Entre em Contato</h2>
+            <div className="space-y-2 text-gray-700">
+              <p className="text-lg text-gray-900">
                 <strong>Cubo Casa Inteligente</strong>
               </p>
               <p>📧 contato@cubocasainteligente.com.br</p>
               <p>📱 (44) 98407-1331</p>
               <p>🌐 www.cubocasainteligente.com.br</p>
-              <p className="text-sm opacity-75 mt-4">Umuarama - PR</p>
+              <p className="text-sm text-gray-600 mt-4">Umuarama - PR</p>
             </div>
           </div>
 
           {/* Mensagem de encerramento */}
-          <p className="text-center text-lg">
+          <p className="text-center text-lg text-gray-900">
             {pageLayouts?.closing_text || "Obrigado pela confiança! Estamos à disposição para esclarecimentos."}
           </p>
         </div>
@@ -624,6 +638,14 @@ const ProposalPage: React.FC = () => {
             }
             .print\\:hidden { 
               display: none !important; 
+              height: 0 !important;
+              width: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              position: static !important;
+            }
+            .fixed.print\\:hidden {
+              position: static !important;
             }
             section {
               width: 100% !important;
@@ -636,6 +658,9 @@ const ProposalPage: React.FC = () => {
               page-break-after: always !important;
               page-break-inside: avoid !important;
               overflow: hidden !important;
+            }
+            section:first-of-type {
+              page-break-before: avoid !important;
             }
             section:last-of-type {
               page-break-after: avoid !important;
