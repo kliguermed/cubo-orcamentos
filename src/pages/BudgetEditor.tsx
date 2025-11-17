@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Plus, Save, Trash2, Upload, Edit2, Eye, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ const BudgetEditor = () => {
   const [allEnvironmentItems, setAllEnvironmentItems] = useState<{
     [envId: string]: Item[];
   }>({});
-  const [clientDataExpanded, setClientDataExpanded] = useState(false);
+  const [clientDataExpanded, setClientDataExpanded] = useState(true);
   const [calculationRulesExpanded, setCalculationRulesExpanded] = useState(false);
   const [proposalEditorOpen, setProposalEditorOpen] = useState(false);
   const [templates, setTemplates] = useState<EnvironmentTemplate[]>([]);
@@ -86,6 +86,7 @@ const BudgetEditor = () => {
     name: string;
     description: string;
   } | null>(null);
+  const clientNameInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (id) {
       fetchBudgetData();
@@ -97,6 +98,16 @@ const BudgetEditor = () => {
       fetchItems(selectedEnvId);
     }
   }, [selectedEnvId]);
+  // Auto-focus on client name when budget is loaded
+  useEffect(() => {
+    if (budget && clientNameInputRef.current) {
+      // Small delay to ensure the card is expanded
+      setTimeout(() => {
+        clientNameInputRef.current?.focus();
+        clientNameInputRef.current?.select();
+      }, 300);
+    }
+  }, [budget?.id]);
 
   // Update budget total when environments or budget rules change
   useEffect(() => {
@@ -572,6 +583,7 @@ const BudgetEditor = () => {
         title: "Dados salvos",
         description: "Dados do cliente atualizados com sucesso",
       });
+      setClientDataExpanded(false);
     } catch (error: any) {
       toast({
         title: "Erro ao salvar",
@@ -652,6 +664,7 @@ const BudgetEditor = () => {
         title: "Regras atualizadas",
         description: "As regras de cálculo foram aplicadas com sucesso",
       });
+      setCalculationRulesExpanded(false);
     } catch (error: any) {
       toast({
         title: "Erro ao salvar regras",
@@ -975,6 +988,7 @@ const BudgetEditor = () => {
                   <div>
                     <Label htmlFor="client-name">Nome completo</Label>
                     <Input
+                      ref={clientNameInputRef}
                       id="client-name"
                       value={budget.client_name}
                       onChange={(e) =>
